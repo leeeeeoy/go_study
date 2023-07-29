@@ -1,87 +1,42 @@
 package main
 
 import (
-	"bytes"
-	"encoding/json"
+	"context"
 	"fmt"
-	"io"
 	"log"
-	"net"
+	"os"
 
-	"github.com/leeeeeoy/go_study/model"
+	"github.com/joho/godotenv"
+	"github.com/leeeeeoy/go_study/ent"
+	_ "github.com/lib/pq"
 )
 
 func main() {
-	l, err := net.Listen("tcp", ":8080")
 
-	if nil != err {
-		log.Fatalf("fail to bind address to 8080; err: %v", err)
+	err := godotenv.Load()
+
+	if err != nil {
+		log.Fatal("Error loading .env file")
 	}
 
-	fmt.Println(l.Addr())
+	dbHost := os.Getenv("DB_HOST")
+	dbPort := os.Getenv("DB_PORT")
+	dbUser := os.Getenv("DB_USER")
+	dbName := os.Getenv("DB_NAME")
+	dbPassword := os.Getenv("DB_PASSWORD")
 
-	defer l.Close()
+	dbConfig := fmt.Sprintf("host=%s port=%s user=%s dbname=%s sslmode=disable password=%s", dbHost, dbPort, dbUser, dbName, dbPassword)
 
-	for {
-		conn, err := l.Accept()
+	client, err := ent.Open("postgres", dbConfig)
 
-		if nil != err {
-			log.Printf("fail to accept; err: %v", err)
-
-			continue
-		}
-
-		go ConnHandler(conn)
+	if err != nil {
+		log.Fatalf("failed opening connection to postgres: %v", err)
 	}
-}
 
-var textData []model.Message
+	defer client.Close()
 
-func ConnHandler(conn net.Conn) {
-	recvBuf := make([]byte, 4096)
-
-	for {
-		n, err := conn.Read(recvBuf)
-
-		if nil != err {
-			if io.EOF == err {
-				log.Printf("connection is closed from client; %v", conn.RemoteAddr().String())
-
-				return
-			}
-
-			log.Printf("fail to receive data; err: %v", err)
-
-			return
-		}
-
-		if 0 < n {
-			data := recvBuf[:n]
-
-			var m model.Message
-
-			err := json.Unmarshal(data[:n], &m)
-
-			if err != nil {
-				log.Println(err)
-			}
-
-			textData = append(textData, m)
-
-			log.Println(textData)
-
-			reqBodyBytes := new(bytes.Buffer)
-
-			json.NewEncoder(reqBodyBytes).Encode(textData)
-
-			reqBodyBytes.Bytes()
-
-			_, err = conn.Write(reqBodyBytes.Bytes())
-			if err != nil {
-				log.Println(err)
-
-				return
-			}
-		}
+	if err := client.Schema.Create(context.Background()); err != nil {
+		log.Fatalf("failed creating schema resources: %v", err)
 	}
+
 }
