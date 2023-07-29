@@ -2,8 +2,61 @@
 
 package ent
 
+import (
+	"time"
+
+	"github.com/leeeeeoy/go_study/ent/board"
+	"github.com/leeeeeoy/go_study/ent/boardlike"
+	"github.com/leeeeeoy/go_study/ent/comment"
+	"github.com/leeeeeoy/go_study/ent/commentlike"
+	"github.com/leeeeeoy/go_study/ent/schema"
+	"github.com/leeeeeoy/go_study/ent/user"
+)
+
 // The init function reads all schema descriptors with runtime code
 // (default values, validators, hooks and policies) and stitches it
 // to their package variables.
 func init() {
+	boardFields := schema.Board{}.Fields()
+	_ = boardFields
+	// boardDescCreatedAt is the schema descriptor for created_at field.
+	boardDescCreatedAt := boardFields[5].Descriptor()
+	// board.DefaultCreatedAt holds the default value on creation for the created_at field.
+	board.DefaultCreatedAt = boardDescCreatedAt.Default.(func() time.Time)
+	// boardDescUpdatedAt is the schema descriptor for updated_at field.
+	boardDescUpdatedAt := boardFields[6].Descriptor()
+	// board.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	board.DefaultUpdatedAt = boardDescUpdatedAt.Default.(func() time.Time)
+	// board.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	board.UpdateDefaultUpdatedAt = boardDescUpdatedAt.UpdateDefault.(func() time.Time)
+	boardlikeFields := schema.BoardLike{}.Fields()
+	_ = boardlikeFields
+	// boardlikeDescCreatedAt is the schema descriptor for created_at field.
+	boardlikeDescCreatedAt := boardlikeFields[2].Descriptor()
+	// boardlike.DefaultCreatedAt holds the default value on creation for the created_at field.
+	boardlike.DefaultCreatedAt = boardlikeDescCreatedAt.Default.(func() time.Time)
+	commentFields := schema.Comment{}.Fields()
+	_ = commentFields
+	// commentDescCreatedAt is the schema descriptor for created_at field.
+	commentDescCreatedAt := commentFields[4].Descriptor()
+	// comment.DefaultCreatedAt holds the default value on creation for the created_at field.
+	comment.DefaultCreatedAt = commentDescCreatedAt.Default.(func() time.Time)
+	// commentDescUpdatedAt is the schema descriptor for updated_at field.
+	commentDescUpdatedAt := commentFields[5].Descriptor()
+	// comment.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	comment.DefaultUpdatedAt = commentDescUpdatedAt.Default.(func() time.Time)
+	// comment.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	comment.UpdateDefaultUpdatedAt = commentDescUpdatedAt.UpdateDefault.(func() time.Time)
+	commentlikeFields := schema.CommentLike{}.Fields()
+	_ = commentlikeFields
+	// commentlikeDescCreatedAt is the schema descriptor for created_at field.
+	commentlikeDescCreatedAt := commentlikeFields[2].Descriptor()
+	// commentlike.DefaultCreatedAt holds the default value on creation for the created_at field.
+	commentlike.DefaultCreatedAt = commentlikeDescCreatedAt.Default.(func() time.Time)
+	userFields := schema.User{}.Fields()
+	_ = userFields
+	// userDescCreatedAt is the schema descriptor for created_at field.
+	userDescCreatedAt := userFields[3].Descriptor()
+	// user.DefaultCreatedAt holds the default value on creation for the created_at field.
+	user.DefaultCreatedAt = userDescCreatedAt.Default.(func() time.Time)
 }

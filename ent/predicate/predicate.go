@@ -6,5 +6,17 @@ import (
 	"entgo.io/ent/dialect/sql"
 )
 
+// Board is the predicate function for board builders.
+type Board func(*sql.Selector)
+
+// BoardLike is the predicate function for boardlike builders.
+type BoardLike func(*sql.Selector)
+
+// Comment is the predicate function for comment builders.
+type Comment func(*sql.Selector)
+
+// CommentLike is the predicate function for commentlike builders.
+type CommentLike func(*sql.Selector)
+
 // User is the predicate function for user builders.
 type User func(*sql.Selector)

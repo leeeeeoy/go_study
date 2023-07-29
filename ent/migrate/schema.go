@@ -8,12 +8,122 @@ import (
 )
 
 var (
+	// BoardsColumns holds the columns for the "boards" table.
+	BoardsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "title", Type: field.TypeString},
+		{Name: "content", Type: field.TypeString},
+		{Name: "like_count", Type: field.TypeInt},
+		{Name: "comment_count", Type: field.TypeInt},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "user_id", Type: field.TypeInt, Nullable: true},
+	}
+	// BoardsTable holds the schema information for the "boards" table.
+	BoardsTable = &schema.Table{
+		Name:       "boards",
+		Columns:    BoardsColumns,
+		PrimaryKey: []*schema.Column{BoardsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "boards_users_boards",
+				Columns:    []*schema.Column{BoardsColumns[7]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
+	}
+	// BoardLikesColumns holds the columns for the "board_likes" table.
+	BoardLikesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "board_id", Type: field.TypeInt, Nullable: true},
+		{Name: "user_id", Type: field.TypeInt, Nullable: true},
+	}
+	// BoardLikesTable holds the schema information for the "board_likes" table.
+	BoardLikesTable = &schema.Table{
+		Name:       "board_likes",
+		Columns:    BoardLikesColumns,
+		PrimaryKey: []*schema.Column{BoardLikesColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "board_likes_boards_board_like",
+				Columns:    []*schema.Column{BoardLikesColumns[2]},
+				RefColumns: []*schema.Column{BoardsColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "board_likes_users_board_like",
+				Columns:    []*schema.Column{BoardLikesColumns[3]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
+	}
+	// CommentsColumns holds the columns for the "comments" table.
+	CommentsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "text", Type: field.TypeString},
+		{Name: "like_count", Type: field.TypeInt},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "board_id", Type: field.TypeInt, Nullable: true},
+		{Name: "user_id", Type: field.TypeInt, Nullable: true},
+	}
+	// CommentsTable holds the schema information for the "comments" table.
+	CommentsTable = &schema.Table{
+		Name:       "comments",
+		Columns:    CommentsColumns,
+		PrimaryKey: []*schema.Column{CommentsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "comments_boards_comments",
+				Columns:    []*schema.Column{CommentsColumns[5]},
+				RefColumns: []*schema.Column{BoardsColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "comments_users_comments",
+				Columns:    []*schema.Column{CommentsColumns[6]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
+	}
+	// CommentLikesColumns holds the columns for the "comment_likes" table.
+	CommentLikesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "comment_id", Type: field.TypeInt, Nullable: true},
+		{Name: "user_id", Type: field.TypeInt, Nullable: true},
+	}
+	// CommentLikesTable holds the schema information for the "comment_likes" table.
+	CommentLikesTable = &schema.Table{
+		Name:       "comment_likes",
+		Columns:    CommentLikesColumns,
+		PrimaryKey: []*schema.Column{CommentLikesColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "comment_likes_comments_comment_like",
+				Columns:    []*schema.Column{CommentLikesColumns[2]},
+				RefColumns: []*schema.Column{CommentsColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "comment_likes_users_comment_like",
+				Columns:    []*schema.Column{CommentLikesColumns[3]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
+	}
 	// UsersColumns holds the columns for the "users" table.
 	UsersColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "email", Type: field.TypeString},
 		{Name: "password", Type: field.TypeString},
 		{Name: "name", Type: field.TypeString},
+		{Name: "created_at", Type: field.TypeTime},
 	}
 	// UsersTable holds the schema information for the "users" table.
 	UsersTable = &schema.Table{
@@ -23,9 +133,20 @@ var (
 	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
+		BoardsTable,
+		BoardLikesTable,
+		CommentsTable,
+		CommentLikesTable,
 		UsersTable,
 	}
 )
 
 func init() {
+	BoardsTable.ForeignKeys[0].RefTable = UsersTable
+	BoardLikesTable.ForeignKeys[0].RefTable = BoardsTable
+	BoardLikesTable.ForeignKeys[1].RefTable = UsersTable
+	CommentsTable.ForeignKeys[0].RefTable = BoardsTable
+	CommentsTable.ForeignKeys[1].RefTable = UsersTable
+	CommentLikesTable.ForeignKeys[0].RefTable = CommentsTable
+	CommentLikesTable.ForeignKeys[1].RefTable = UsersTable
 }

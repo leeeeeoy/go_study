@@ -3,7 +3,10 @@
 package user
 
 import (
+	"time"
+
 	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
 )
 
 const (
@@ -17,8 +20,46 @@ const (
 	FieldPassword = "password"
 	// FieldName holds the string denoting the name field in the database.
 	FieldName = "name"
+	// FieldCreatedAt holds the string denoting the created_at field in the database.
+	FieldCreatedAt = "created_at"
+	// EdgeBoards holds the string denoting the boards edge name in mutations.
+	EdgeBoards = "boards"
+	// EdgeBoardLike holds the string denoting the board_like edge name in mutations.
+	EdgeBoardLike = "board_like"
+	// EdgeCommentLike holds the string denoting the comment_like edge name in mutations.
+	EdgeCommentLike = "comment_like"
+	// EdgeComments holds the string denoting the comments edge name in mutations.
+	EdgeComments = "comments"
 	// Table holds the table name of the user in the database.
 	Table = "users"
+	// BoardsTable is the table that holds the boards relation/edge.
+	BoardsTable = "boards"
+	// BoardsInverseTable is the table name for the Board entity.
+	// It exists in this package in order to avoid circular dependency with the "board" package.
+	BoardsInverseTable = "boards"
+	// BoardsColumn is the table column denoting the boards relation/edge.
+	BoardsColumn = "user_id"
+	// BoardLikeTable is the table that holds the board_like relation/edge.
+	BoardLikeTable = "board_likes"
+	// BoardLikeInverseTable is the table name for the BoardLike entity.
+	// It exists in this package in order to avoid circular dependency with the "boardlike" package.
+	BoardLikeInverseTable = "board_likes"
+	// BoardLikeColumn is the table column denoting the board_like relation/edge.
+	BoardLikeColumn = "user_id"
+	// CommentLikeTable is the table that holds the comment_like relation/edge.
+	CommentLikeTable = "comment_likes"
+	// CommentLikeInverseTable is the table name for the CommentLike entity.
+	// It exists in this package in order to avoid circular dependency with the "commentlike" package.
+	CommentLikeInverseTable = "comment_likes"
+	// CommentLikeColumn is the table column denoting the comment_like relation/edge.
+	CommentLikeColumn = "user_id"
+	// CommentsTable is the table that holds the comments relation/edge.
+	CommentsTable = "comments"
+	// CommentsInverseTable is the table name for the Comment entity.
+	// It exists in this package in order to avoid circular dependency with the "comment" package.
+	CommentsInverseTable = "comments"
+	// CommentsColumn is the table column denoting the comments relation/edge.
+	CommentsColumn = "user_id"
 )
 
 // Columns holds all SQL columns for user fields.
@@ -27,6 +68,7 @@ var Columns = []string{
 	FieldEmail,
 	FieldPassword,
 	FieldName,
+	FieldCreatedAt,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -38,6 +80,11 @@ func ValidColumn(column string) bool {
 	}
 	return false
 }
+
+var (
+	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
+	DefaultCreatedAt func() time.Time
+)
 
 // OrderOption defines the ordering options for the User queries.
 type OrderOption func(*sql.Selector)
@@ -60,4 +107,93 @@ func ByPassword(opts ...sql.OrderTermOption) OrderOption {
 // ByName orders the results by the name field.
 func ByName(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldName, opts...).ToFunc()
+}
+
+// ByCreatedAt orders the results by the created_at field.
+func ByCreatedAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldCreatedAt, opts...).ToFunc()
+}
+
+// ByBoardsCount orders the results by boards count.
+func ByBoardsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newBoardsStep(), opts...)
+	}
+}
+
+// ByBoards orders the results by boards terms.
+func ByBoards(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newBoardsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByBoardLikeCount orders the results by board_like count.
+func ByBoardLikeCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newBoardLikeStep(), opts...)
+	}
+}
+
+// ByBoardLike orders the results by board_like terms.
+func ByBoardLike(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newBoardLikeStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByCommentLikeCount orders the results by comment_like count.
+func ByCommentLikeCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newCommentLikeStep(), opts...)
+	}
+}
+
+// ByCommentLike orders the results by comment_like terms.
+func ByCommentLike(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newCommentLikeStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByCommentsCount orders the results by comments count.
+func ByCommentsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newCommentsStep(), opts...)
+	}
+}
+
+// ByComments orders the results by comments terms.
+func ByComments(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newCommentsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+func newBoardsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(BoardsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, BoardsTable, BoardsColumn),
+	)
+}
+func newBoardLikeStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(BoardLikeInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, BoardLikeTable, BoardLikeColumn),
+	)
+}
+func newCommentLikeStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(CommentLikeInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, CommentLikeTable, CommentLikeColumn),
+	)
+}
+func newCommentsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(CommentsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, CommentsTable, CommentsColumn),
+	)
 }
