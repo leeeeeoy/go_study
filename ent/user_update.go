@@ -15,6 +15,7 @@ import (
 	"github.com/leeeeeoy/go_study/ent/boardlike"
 	"github.com/leeeeeoy/go_study/ent/comment"
 	"github.com/leeeeeoy/go_study/ent/commentlike"
+	"github.com/leeeeeoy/go_study/ent/commentmention"
 	"github.com/leeeeeoy/go_study/ent/predicate"
 	"github.com/leeeeeoy/go_study/ent/user"
 )
@@ -124,6 +125,21 @@ func (uu *UserUpdate) AddComments(c ...*Comment) *UserUpdate {
 	return uu.AddCommentIDs(ids...)
 }
 
+// AddCommentMentionIDs adds the "comment_mention" edge to the CommentMention entity by IDs.
+func (uu *UserUpdate) AddCommentMentionIDs(ids ...int) *UserUpdate {
+	uu.mutation.AddCommentMentionIDs(ids...)
+	return uu
+}
+
+// AddCommentMention adds the "comment_mention" edges to the CommentMention entity.
+func (uu *UserUpdate) AddCommentMention(c ...*CommentMention) *UserUpdate {
+	ids := make([]int, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
+	}
+	return uu.AddCommentMentionIDs(ids...)
+}
+
 // Mutation returns the UserMutation object of the builder.
 func (uu *UserUpdate) Mutation() *UserMutation {
 	return uu.mutation
@@ -211,6 +227,27 @@ func (uu *UserUpdate) RemoveComments(c ...*Comment) *UserUpdate {
 		ids[i] = c[i].ID
 	}
 	return uu.RemoveCommentIDs(ids...)
+}
+
+// ClearCommentMention clears all "comment_mention" edges to the CommentMention entity.
+func (uu *UserUpdate) ClearCommentMention() *UserUpdate {
+	uu.mutation.ClearCommentMention()
+	return uu
+}
+
+// RemoveCommentMentionIDs removes the "comment_mention" edge to CommentMention entities by IDs.
+func (uu *UserUpdate) RemoveCommentMentionIDs(ids ...int) *UserUpdate {
+	uu.mutation.RemoveCommentMentionIDs(ids...)
+	return uu
+}
+
+// RemoveCommentMention removes "comment_mention" edges to CommentMention entities.
+func (uu *UserUpdate) RemoveCommentMention(c ...*CommentMention) *UserUpdate {
+	ids := make([]int, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
+	}
+	return uu.RemoveCommentMentionIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -441,6 +478,51 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if uu.mutation.CommentMentionCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.CommentMentionTable,
+			Columns: []string{user.CommentMentionColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(commentmention.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uu.mutation.RemovedCommentMentionIDs(); len(nodes) > 0 && !uu.mutation.CommentMentionCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.CommentMentionTable,
+			Columns: []string{user.CommentMentionColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(commentmention.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uu.mutation.CommentMentionIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.CommentMentionTable,
+			Columns: []string{user.CommentMentionColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(commentmention.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, uu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{user.Label}
@@ -553,6 +635,21 @@ func (uuo *UserUpdateOne) AddComments(c ...*Comment) *UserUpdateOne {
 	return uuo.AddCommentIDs(ids...)
 }
 
+// AddCommentMentionIDs adds the "comment_mention" edge to the CommentMention entity by IDs.
+func (uuo *UserUpdateOne) AddCommentMentionIDs(ids ...int) *UserUpdateOne {
+	uuo.mutation.AddCommentMentionIDs(ids...)
+	return uuo
+}
+
+// AddCommentMention adds the "comment_mention" edges to the CommentMention entity.
+func (uuo *UserUpdateOne) AddCommentMention(c ...*CommentMention) *UserUpdateOne {
+	ids := make([]int, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
+	}
+	return uuo.AddCommentMentionIDs(ids...)
+}
+
 // Mutation returns the UserMutation object of the builder.
 func (uuo *UserUpdateOne) Mutation() *UserMutation {
 	return uuo.mutation
@@ -640,6 +737,27 @@ func (uuo *UserUpdateOne) RemoveComments(c ...*Comment) *UserUpdateOne {
 		ids[i] = c[i].ID
 	}
 	return uuo.RemoveCommentIDs(ids...)
+}
+
+// ClearCommentMention clears all "comment_mention" edges to the CommentMention entity.
+func (uuo *UserUpdateOne) ClearCommentMention() *UserUpdateOne {
+	uuo.mutation.ClearCommentMention()
+	return uuo
+}
+
+// RemoveCommentMentionIDs removes the "comment_mention" edge to CommentMention entities by IDs.
+func (uuo *UserUpdateOne) RemoveCommentMentionIDs(ids ...int) *UserUpdateOne {
+	uuo.mutation.RemoveCommentMentionIDs(ids...)
+	return uuo
+}
+
+// RemoveCommentMention removes "comment_mention" edges to CommentMention entities.
+func (uuo *UserUpdateOne) RemoveCommentMention(c ...*CommentMention) *UserUpdateOne {
+	ids := make([]int, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
+	}
+	return uuo.RemoveCommentMentionIDs(ids...)
 }
 
 // Where appends a list predicates to the UserUpdate builder.
@@ -893,6 +1011,51 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(comment.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if uuo.mutation.CommentMentionCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.CommentMentionTable,
+			Columns: []string{user.CommentMentionColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(commentmention.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uuo.mutation.RemovedCommentMentionIDs(); len(nodes) > 0 && !uuo.mutation.CommentMentionCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.CommentMentionTable,
+			Columns: []string{user.CommentMentionColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(commentmention.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uuo.mutation.CommentMentionIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.CommentMentionTable,
+			Columns: []string{user.CommentMentionColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(commentmention.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

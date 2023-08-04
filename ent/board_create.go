@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/leeeeeoy/go_study/ent/board"
+	"github.com/leeeeeoy/go_study/ent/boardhashtag"
 	"github.com/leeeeeoy/go_study/ent/boardlike"
 	"github.com/leeeeeoy/go_study/ent/comment"
 	"github.com/leeeeeoy/go_study/ent/user"
@@ -29,9 +30,9 @@ func (bc *BoardCreate) SetTitle(s string) *BoardCreate {
 	return bc
 }
 
-// SetContent sets the "content" field.
-func (bc *BoardCreate) SetContent(s string) *BoardCreate {
-	bc.mutation.SetContent(s)
+// SetText sets the "text" field.
+func (bc *BoardCreate) SetText(s string) *BoardCreate {
+	bc.mutation.SetText(s)
 	return bc
 }
 
@@ -58,6 +59,44 @@ func (bc *BoardCreate) SetLikeCount(i int) *BoardCreate {
 // SetCommentCount sets the "comment_count" field.
 func (bc *BoardCreate) SetCommentCount(i int) *BoardCreate {
 	bc.mutation.SetCommentCount(i)
+	return bc
+}
+
+// SetViewCount sets the "view_count" field.
+func (bc *BoardCreate) SetViewCount(i int) *BoardCreate {
+	bc.mutation.SetViewCount(i)
+	return bc
+}
+
+// SetReportCount sets the "report_count" field.
+func (bc *BoardCreate) SetReportCount(i int) *BoardCreate {
+	bc.mutation.SetReportCount(i)
+	return bc
+}
+
+// SetStatus sets the "status" field.
+func (bc *BoardCreate) SetStatus(b board.Status) *BoardCreate {
+	bc.mutation.SetStatus(b)
+	return bc
+}
+
+// SetLanguageType sets the "language_type" field.
+func (bc *BoardCreate) SetLanguageType(s string) *BoardCreate {
+	bc.mutation.SetLanguageType(s)
+	return bc
+}
+
+// SetAttachments sets the "attachments" field.
+func (bc *BoardCreate) SetAttachments(s string) *BoardCreate {
+	bc.mutation.SetAttachments(s)
+	return bc
+}
+
+// SetNillableAttachments sets the "attachments" field if the given value is not nil.
+func (bc *BoardCreate) SetNillableAttachments(s *string) *BoardCreate {
+	if s != nil {
+		bc.SetAttachments(*s)
+	}
 	return bc
 }
 
@@ -124,6 +163,21 @@ func (bc *BoardCreate) AddBoardLike(b ...*BoardLike) *BoardCreate {
 	return bc.AddBoardLikeIDs(ids...)
 }
 
+// AddBoardHashtagIDs adds the "board_hashtag" edge to the BoardHashtag entity by IDs.
+func (bc *BoardCreate) AddBoardHashtagIDs(ids ...int) *BoardCreate {
+	bc.mutation.AddBoardHashtagIDs(ids...)
+	return bc
+}
+
+// AddBoardHashtag adds the "board_hashtag" edges to the BoardHashtag entity.
+func (bc *BoardCreate) AddBoardHashtag(b ...*BoardHashtag) *BoardCreate {
+	ids := make([]int, len(b))
+	for i := range b {
+		ids[i] = b[i].ID
+	}
+	return bc.AddBoardHashtagIDs(ids...)
+}
+
 // Mutation returns the BoardMutation object of the builder.
 func (bc *BoardCreate) Mutation() *BoardMutation {
 	return bc.mutation
@@ -174,14 +228,51 @@ func (bc *BoardCreate) check() error {
 	if _, ok := bc.mutation.Title(); !ok {
 		return &ValidationError{Name: "title", err: errors.New(`ent: missing required field "Board.title"`)}
 	}
-	if _, ok := bc.mutation.Content(); !ok {
-		return &ValidationError{Name: "content", err: errors.New(`ent: missing required field "Board.content"`)}
+	if _, ok := bc.mutation.Text(); !ok {
+		return &ValidationError{Name: "text", err: errors.New(`ent: missing required field "Board.text"`)}
 	}
 	if _, ok := bc.mutation.LikeCount(); !ok {
 		return &ValidationError{Name: "like_count", err: errors.New(`ent: missing required field "Board.like_count"`)}
 	}
+	if v, ok := bc.mutation.LikeCount(); ok {
+		if err := board.LikeCountValidator(v); err != nil {
+			return &ValidationError{Name: "like_count", err: fmt.Errorf(`ent: validator failed for field "Board.like_count": %w`, err)}
+		}
+	}
 	if _, ok := bc.mutation.CommentCount(); !ok {
 		return &ValidationError{Name: "comment_count", err: errors.New(`ent: missing required field "Board.comment_count"`)}
+	}
+	if v, ok := bc.mutation.CommentCount(); ok {
+		if err := board.CommentCountValidator(v); err != nil {
+			return &ValidationError{Name: "comment_count", err: fmt.Errorf(`ent: validator failed for field "Board.comment_count": %w`, err)}
+		}
+	}
+	if _, ok := bc.mutation.ViewCount(); !ok {
+		return &ValidationError{Name: "view_count", err: errors.New(`ent: missing required field "Board.view_count"`)}
+	}
+	if v, ok := bc.mutation.ViewCount(); ok {
+		if err := board.ViewCountValidator(v); err != nil {
+			return &ValidationError{Name: "view_count", err: fmt.Errorf(`ent: validator failed for field "Board.view_count": %w`, err)}
+		}
+	}
+	if _, ok := bc.mutation.ReportCount(); !ok {
+		return &ValidationError{Name: "report_count", err: errors.New(`ent: missing required field "Board.report_count"`)}
+	}
+	if v, ok := bc.mutation.ReportCount(); ok {
+		if err := board.ReportCountValidator(v); err != nil {
+			return &ValidationError{Name: "report_count", err: fmt.Errorf(`ent: validator failed for field "Board.report_count": %w`, err)}
+		}
+	}
+	if _, ok := bc.mutation.Status(); !ok {
+		return &ValidationError{Name: "status", err: errors.New(`ent: missing required field "Board.status"`)}
+	}
+	if v, ok := bc.mutation.Status(); ok {
+		if err := board.StatusValidator(v); err != nil {
+			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "Board.status": %w`, err)}
+		}
+	}
+	if _, ok := bc.mutation.LanguageType(); !ok {
+		return &ValidationError{Name: "language_type", err: errors.New(`ent: missing required field "Board.language_type"`)}
 	}
 	if _, ok := bc.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "Board.created_at"`)}
@@ -219,9 +310,9 @@ func (bc *BoardCreate) createSpec() (*Board, *sqlgraph.CreateSpec) {
 		_spec.SetField(board.FieldTitle, field.TypeString, value)
 		_node.Title = value
 	}
-	if value, ok := bc.mutation.Content(); ok {
-		_spec.SetField(board.FieldContent, field.TypeString, value)
-		_node.Content = value
+	if value, ok := bc.mutation.Text(); ok {
+		_spec.SetField(board.FieldText, field.TypeString, value)
+		_node.Text = value
 	}
 	if value, ok := bc.mutation.LikeCount(); ok {
 		_spec.SetField(board.FieldLikeCount, field.TypeInt, value)
@@ -230,6 +321,26 @@ func (bc *BoardCreate) createSpec() (*Board, *sqlgraph.CreateSpec) {
 	if value, ok := bc.mutation.CommentCount(); ok {
 		_spec.SetField(board.FieldCommentCount, field.TypeInt, value)
 		_node.CommentCount = value
+	}
+	if value, ok := bc.mutation.ViewCount(); ok {
+		_spec.SetField(board.FieldViewCount, field.TypeInt, value)
+		_node.ViewCount = value
+	}
+	if value, ok := bc.mutation.ReportCount(); ok {
+		_spec.SetField(board.FieldReportCount, field.TypeInt, value)
+		_node.ReportCount = value
+	}
+	if value, ok := bc.mutation.Status(); ok {
+		_spec.SetField(board.FieldStatus, field.TypeEnum, value)
+		_node.Status = value
+	}
+	if value, ok := bc.mutation.LanguageType(); ok {
+		_spec.SetField(board.FieldLanguageType, field.TypeString, value)
+		_node.LanguageType = value
+	}
+	if value, ok := bc.mutation.Attachments(); ok {
+		_spec.SetField(board.FieldAttachments, field.TypeString, value)
+		_node.Attachments = value
 	}
 	if value, ok := bc.mutation.CreatedAt(); ok {
 		_spec.SetField(board.FieldCreatedAt, field.TypeTime, value)
@@ -281,6 +392,22 @@ func (bc *BoardCreate) createSpec() (*Board, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(boardlike.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := bc.mutation.BoardHashtagIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   board.BoardHashtagTable,
+			Columns: []string{board.BoardHashtagColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(boardhashtag.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

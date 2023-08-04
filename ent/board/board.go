@@ -3,6 +3,7 @@
 package board
 
 import (
+	"fmt"
 	"time"
 
 	"entgo.io/ent/dialect/sql"
@@ -16,14 +17,24 @@ const (
 	FieldID = "id"
 	// FieldTitle holds the string denoting the title field in the database.
 	FieldTitle = "title"
-	// FieldContent holds the string denoting the content field in the database.
-	FieldContent = "content"
+	// FieldText holds the string denoting the text field in the database.
+	FieldText = "text"
 	// FieldUserID holds the string denoting the user_id field in the database.
 	FieldUserID = "user_id"
 	// FieldLikeCount holds the string denoting the like_count field in the database.
 	FieldLikeCount = "like_count"
 	// FieldCommentCount holds the string denoting the comment_count field in the database.
 	FieldCommentCount = "comment_count"
+	// FieldViewCount holds the string denoting the view_count field in the database.
+	FieldViewCount = "view_count"
+	// FieldReportCount holds the string denoting the report_count field in the database.
+	FieldReportCount = "report_count"
+	// FieldStatus holds the string denoting the status field in the database.
+	FieldStatus = "status"
+	// FieldLanguageType holds the string denoting the language_type field in the database.
+	FieldLanguageType = "language_type"
+	// FieldAttachments holds the string denoting the attachments field in the database.
+	FieldAttachments = "attachments"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
 	FieldCreatedAt = "created_at"
 	// FieldUpdatedAt holds the string denoting the updated_at field in the database.
@@ -34,6 +45,8 @@ const (
 	EdgeComments = "comments"
 	// EdgeBoardLike holds the string denoting the board_like edge name in mutations.
 	EdgeBoardLike = "board_like"
+	// EdgeBoardHashtag holds the string denoting the board_hashtag edge name in mutations.
+	EdgeBoardHashtag = "board_hashtag"
 	// Table holds the table name of the board in the database.
 	Table = "boards"
 	// UserTable is the table that holds the user relation/edge.
@@ -57,16 +70,28 @@ const (
 	BoardLikeInverseTable = "board_likes"
 	// BoardLikeColumn is the table column denoting the board_like relation/edge.
 	BoardLikeColumn = "board_id"
+	// BoardHashtagTable is the table that holds the board_hashtag relation/edge.
+	BoardHashtagTable = "board_hashtags"
+	// BoardHashtagInverseTable is the table name for the BoardHashtag entity.
+	// It exists in this package in order to avoid circular dependency with the "boardhashtag" package.
+	BoardHashtagInverseTable = "board_hashtags"
+	// BoardHashtagColumn is the table column denoting the board_hashtag relation/edge.
+	BoardHashtagColumn = "board_id"
 )
 
 // Columns holds all SQL columns for board fields.
 var Columns = []string{
 	FieldID,
 	FieldTitle,
-	FieldContent,
+	FieldText,
 	FieldUserID,
 	FieldLikeCount,
 	FieldCommentCount,
+	FieldViewCount,
+	FieldReportCount,
+	FieldStatus,
+	FieldLanguageType,
+	FieldAttachments,
 	FieldCreatedAt,
 	FieldUpdatedAt,
 }
@@ -82,6 +107,14 @@ func ValidColumn(column string) bool {
 }
 
 var (
+	// LikeCountValidator is a validator for the "like_count" field. It is called by the builders before save.
+	LikeCountValidator func(int) error
+	// CommentCountValidator is a validator for the "comment_count" field. It is called by the builders before save.
+	CommentCountValidator func(int) error
+	// ViewCountValidator is a validator for the "view_count" field. It is called by the builders before save.
+	ViewCountValidator func(int) error
+	// ReportCountValidator is a validator for the "report_count" field. It is called by the builders before save.
+	ReportCountValidator func(int) error
 	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
 	DefaultCreatedAt func() time.Time
 	// DefaultUpdatedAt holds the default value on creation for the "updated_at" field.
@@ -89,6 +122,29 @@ var (
 	// UpdateDefaultUpdatedAt holds the default value on update for the "updated_at" field.
 	UpdateDefaultUpdatedAt func() time.Time
 )
+
+// Status defines the type for the "status" enum field.
+type Status string
+
+// Status values.
+const (
+	StatusActivate Status = "activate"
+	StatusDeleted  Status = "deleted"
+)
+
+func (s Status) String() string {
+	return string(s)
+}
+
+// StatusValidator is a validator for the "status" field enum values. It is called by the builders before save.
+func StatusValidator(s Status) error {
+	switch s {
+	case StatusActivate, StatusDeleted:
+		return nil
+	default:
+		return fmt.Errorf("board: invalid enum value for status field: %q", s)
+	}
+}
 
 // OrderOption defines the ordering options for the Board queries.
 type OrderOption func(*sql.Selector)
@@ -103,9 +159,9 @@ func ByTitle(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldTitle, opts...).ToFunc()
 }
 
-// ByContent orders the results by the content field.
-func ByContent(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldContent, opts...).ToFunc()
+// ByText orders the results by the text field.
+func ByText(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldText, opts...).ToFunc()
 }
 
 // ByUserID orders the results by the user_id field.
@@ -121,6 +177,31 @@ func ByLikeCount(opts ...sql.OrderTermOption) OrderOption {
 // ByCommentCount orders the results by the comment_count field.
 func ByCommentCount(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldCommentCount, opts...).ToFunc()
+}
+
+// ByViewCount orders the results by the view_count field.
+func ByViewCount(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldViewCount, opts...).ToFunc()
+}
+
+// ByReportCount orders the results by the report_count field.
+func ByReportCount(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldReportCount, opts...).ToFunc()
+}
+
+// ByStatus orders the results by the status field.
+func ByStatus(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldStatus, opts...).ToFunc()
+}
+
+// ByLanguageType orders the results by the language_type field.
+func ByLanguageType(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldLanguageType, opts...).ToFunc()
+}
+
+// ByAttachments orders the results by the attachments field.
+func ByAttachments(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldAttachments, opts...).ToFunc()
 }
 
 // ByCreatedAt orders the results by the created_at field.
@@ -167,6 +248,20 @@ func ByBoardLike(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newBoardLikeStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// ByBoardHashtagCount orders the results by board_hashtag count.
+func ByBoardHashtagCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newBoardHashtagStep(), opts...)
+	}
+}
+
+// ByBoardHashtag orders the results by board_hashtag terms.
+func ByBoardHashtag(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newBoardHashtagStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newUserStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -186,5 +281,12 @@ func newBoardLikeStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(BoardLikeInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, BoardLikeTable, BoardLikeColumn),
+	)
+}
+func newBoardHashtagStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(BoardHashtagInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, BoardHashtagTable, BoardHashtagColumn),
 	)
 }

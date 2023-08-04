@@ -15,9 +15,12 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/leeeeeoy/go_study/ent/board"
+	"github.com/leeeeeoy/go_study/ent/boardhashtag"
 	"github.com/leeeeeoy/go_study/ent/boardlike"
 	"github.com/leeeeeoy/go_study/ent/comment"
 	"github.com/leeeeeoy/go_study/ent/commentlike"
+	"github.com/leeeeeoy/go_study/ent/commentmention"
+	"github.com/leeeeeoy/go_study/ent/hashtag"
 	"github.com/leeeeeoy/go_study/ent/user"
 )
 
@@ -28,12 +31,18 @@ type Client struct {
 	Schema *migrate.Schema
 	// Board is the client for interacting with the Board builders.
 	Board *BoardClient
+	// BoardHashtag is the client for interacting with the BoardHashtag builders.
+	BoardHashtag *BoardHashtagClient
 	// BoardLike is the client for interacting with the BoardLike builders.
 	BoardLike *BoardLikeClient
 	// Comment is the client for interacting with the Comment builders.
 	Comment *CommentClient
 	// CommentLike is the client for interacting with the CommentLike builders.
 	CommentLike *CommentLikeClient
+	// CommentMention is the client for interacting with the CommentMention builders.
+	CommentMention *CommentMentionClient
+	// Hashtag is the client for interacting with the Hashtag builders.
+	Hashtag *HashtagClient
 	// User is the client for interacting with the User builders.
 	User *UserClient
 }
@@ -50,9 +59,12 @@ func NewClient(opts ...Option) *Client {
 func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
 	c.Board = NewBoardClient(c.config)
+	c.BoardHashtag = NewBoardHashtagClient(c.config)
 	c.BoardLike = NewBoardLikeClient(c.config)
 	c.Comment = NewCommentClient(c.config)
 	c.CommentLike = NewCommentLikeClient(c.config)
+	c.CommentMention = NewCommentMentionClient(c.config)
+	c.Hashtag = NewHashtagClient(c.config)
 	c.User = NewUserClient(c.config)
 }
 
@@ -134,13 +146,16 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	cfg := c.config
 	cfg.driver = tx
 	return &Tx{
-		ctx:         ctx,
-		config:      cfg,
-		Board:       NewBoardClient(cfg),
-		BoardLike:   NewBoardLikeClient(cfg),
-		Comment:     NewCommentClient(cfg),
-		CommentLike: NewCommentLikeClient(cfg),
-		User:        NewUserClient(cfg),
+		ctx:            ctx,
+		config:         cfg,
+		Board:          NewBoardClient(cfg),
+		BoardHashtag:   NewBoardHashtagClient(cfg),
+		BoardLike:      NewBoardLikeClient(cfg),
+		Comment:        NewCommentClient(cfg),
+		CommentLike:    NewCommentLikeClient(cfg),
+		CommentMention: NewCommentMentionClient(cfg),
+		Hashtag:        NewHashtagClient(cfg),
+		User:           NewUserClient(cfg),
 	}, nil
 }
 
@@ -158,13 +173,16 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	cfg := c.config
 	cfg.driver = &txDriver{tx: tx, drv: c.driver}
 	return &Tx{
-		ctx:         ctx,
-		config:      cfg,
-		Board:       NewBoardClient(cfg),
-		BoardLike:   NewBoardLikeClient(cfg),
-		Comment:     NewCommentClient(cfg),
-		CommentLike: NewCommentLikeClient(cfg),
-		User:        NewUserClient(cfg),
+		ctx:            ctx,
+		config:         cfg,
+		Board:          NewBoardClient(cfg),
+		BoardHashtag:   NewBoardHashtagClient(cfg),
+		BoardLike:      NewBoardLikeClient(cfg),
+		Comment:        NewCommentClient(cfg),
+		CommentLike:    NewCommentLikeClient(cfg),
+		CommentMention: NewCommentMentionClient(cfg),
+		Hashtag:        NewHashtagClient(cfg),
+		User:           NewUserClient(cfg),
 	}, nil
 }
 
@@ -193,21 +211,23 @@ func (c *Client) Close() error {
 // Use adds the mutation hooks to all the entity clients.
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
-	c.Board.Use(hooks...)
-	c.BoardLike.Use(hooks...)
-	c.Comment.Use(hooks...)
-	c.CommentLike.Use(hooks...)
-	c.User.Use(hooks...)
+	for _, n := range []interface{ Use(...Hook) }{
+		c.Board, c.BoardHashtag, c.BoardLike, c.Comment, c.CommentLike,
+		c.CommentMention, c.Hashtag, c.User,
+	} {
+		n.Use(hooks...)
+	}
 }
 
 // Intercept adds the query interceptors to all the entity clients.
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
-	c.Board.Intercept(interceptors...)
-	c.BoardLike.Intercept(interceptors...)
-	c.Comment.Intercept(interceptors...)
-	c.CommentLike.Intercept(interceptors...)
-	c.User.Intercept(interceptors...)
+	for _, n := range []interface{ Intercept(...Interceptor) }{
+		c.Board, c.BoardHashtag, c.BoardLike, c.Comment, c.CommentLike,
+		c.CommentMention, c.Hashtag, c.User,
+	} {
+		n.Intercept(interceptors...)
+	}
 }
 
 // Mutate implements the ent.Mutator interface.
@@ -215,12 +235,18 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 	switch m := m.(type) {
 	case *BoardMutation:
 		return c.Board.mutate(ctx, m)
+	case *BoardHashtagMutation:
+		return c.BoardHashtag.mutate(ctx, m)
 	case *BoardLikeMutation:
 		return c.BoardLike.mutate(ctx, m)
 	case *CommentMutation:
 		return c.Comment.mutate(ctx, m)
 	case *CommentLikeMutation:
 		return c.CommentLike.mutate(ctx, m)
+	case *CommentMentionMutation:
+		return c.CommentMention.mutate(ctx, m)
+	case *HashtagMutation:
+		return c.Hashtag.mutate(ctx, m)
 	case *UserMutation:
 		return c.User.mutate(ctx, m)
 	default:
@@ -369,6 +395,22 @@ func (c *BoardClient) QueryBoardLike(b *Board) *BoardLikeQuery {
 	return query
 }
 
+// QueryBoardHashtag queries the board_hashtag edge of a Board.
+func (c *BoardClient) QueryBoardHashtag(b *Board) *BoardHashtagQuery {
+	query := (&BoardHashtagClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := b.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(board.Table, board.FieldID, id),
+			sqlgraph.To(boardhashtag.Table, boardhashtag.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, board.BoardHashtagTable, board.BoardHashtagColumn),
+		)
+		fromV = sqlgraph.Neighbors(b.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *BoardClient) Hooks() []Hook {
 	return c.hooks.Board
@@ -391,6 +433,156 @@ func (c *BoardClient) mutate(ctx context.Context, m *BoardMutation) (Value, erro
 		return (&BoardDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown Board mutation op: %q", m.Op())
+	}
+}
+
+// BoardHashtagClient is a client for the BoardHashtag schema.
+type BoardHashtagClient struct {
+	config
+}
+
+// NewBoardHashtagClient returns a client for the BoardHashtag from the given config.
+func NewBoardHashtagClient(c config) *BoardHashtagClient {
+	return &BoardHashtagClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `boardhashtag.Hooks(f(g(h())))`.
+func (c *BoardHashtagClient) Use(hooks ...Hook) {
+	c.hooks.BoardHashtag = append(c.hooks.BoardHashtag, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `boardhashtag.Intercept(f(g(h())))`.
+func (c *BoardHashtagClient) Intercept(interceptors ...Interceptor) {
+	c.inters.BoardHashtag = append(c.inters.BoardHashtag, interceptors...)
+}
+
+// Create returns a builder for creating a BoardHashtag entity.
+func (c *BoardHashtagClient) Create() *BoardHashtagCreate {
+	mutation := newBoardHashtagMutation(c.config, OpCreate)
+	return &BoardHashtagCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of BoardHashtag entities.
+func (c *BoardHashtagClient) CreateBulk(builders ...*BoardHashtagCreate) *BoardHashtagCreateBulk {
+	return &BoardHashtagCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for BoardHashtag.
+func (c *BoardHashtagClient) Update() *BoardHashtagUpdate {
+	mutation := newBoardHashtagMutation(c.config, OpUpdate)
+	return &BoardHashtagUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *BoardHashtagClient) UpdateOne(bh *BoardHashtag) *BoardHashtagUpdateOne {
+	mutation := newBoardHashtagMutation(c.config, OpUpdateOne, withBoardHashtag(bh))
+	return &BoardHashtagUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *BoardHashtagClient) UpdateOneID(id int) *BoardHashtagUpdateOne {
+	mutation := newBoardHashtagMutation(c.config, OpUpdateOne, withBoardHashtagID(id))
+	return &BoardHashtagUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for BoardHashtag.
+func (c *BoardHashtagClient) Delete() *BoardHashtagDelete {
+	mutation := newBoardHashtagMutation(c.config, OpDelete)
+	return &BoardHashtagDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *BoardHashtagClient) DeleteOne(bh *BoardHashtag) *BoardHashtagDeleteOne {
+	return c.DeleteOneID(bh.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *BoardHashtagClient) DeleteOneID(id int) *BoardHashtagDeleteOne {
+	builder := c.Delete().Where(boardhashtag.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &BoardHashtagDeleteOne{builder}
+}
+
+// Query returns a query builder for BoardHashtag.
+func (c *BoardHashtagClient) Query() *BoardHashtagQuery {
+	return &BoardHashtagQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeBoardHashtag},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a BoardHashtag entity by its id.
+func (c *BoardHashtagClient) Get(ctx context.Context, id int) (*BoardHashtag, error) {
+	return c.Query().Where(boardhashtag.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *BoardHashtagClient) GetX(ctx context.Context, id int) *BoardHashtag {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryBoard queries the board edge of a BoardHashtag.
+func (c *BoardHashtagClient) QueryBoard(bh *BoardHashtag) *BoardQuery {
+	query := (&BoardClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := bh.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(boardhashtag.Table, boardhashtag.FieldID, id),
+			sqlgraph.To(board.Table, board.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, boardhashtag.BoardTable, boardhashtag.BoardColumn),
+		)
+		fromV = sqlgraph.Neighbors(bh.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryHashtag queries the hashtag edge of a BoardHashtag.
+func (c *BoardHashtagClient) QueryHashtag(bh *BoardHashtag) *HashtagQuery {
+	query := (&HashtagClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := bh.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(boardhashtag.Table, boardhashtag.FieldID, id),
+			sqlgraph.To(hashtag.Table, hashtag.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, boardhashtag.HashtagTable, boardhashtag.HashtagColumn),
+		)
+		fromV = sqlgraph.Neighbors(bh.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *BoardHashtagClient) Hooks() []Hook {
+	return c.hooks.BoardHashtag
+}
+
+// Interceptors returns the client interceptors.
+func (c *BoardHashtagClient) Interceptors() []Interceptor {
+	return c.inters.BoardHashtag
+}
+
+func (c *BoardHashtagClient) mutate(ctx context.Context, m *BoardHashtagMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&BoardHashtagCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&BoardHashtagUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&BoardHashtagUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&BoardHashtagDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown BoardHashtag mutation op: %q", m.Op())
 	}
 }
 
@@ -685,6 +877,22 @@ func (c *CommentClient) QueryCommentLike(co *Comment) *CommentLikeQuery {
 	return query
 }
 
+// QueryCommentMention queries the comment_mention edge of a Comment.
+func (c *CommentClient) QueryCommentMention(co *Comment) *CommentMentionQuery {
+	query := (&CommentMentionClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := co.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(comment.Table, comment.FieldID, id),
+			sqlgraph.To(commentmention.Table, commentmention.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, comment.CommentMentionTable, comment.CommentMentionColumn),
+		)
+		fromV = sqlgraph.Neighbors(co.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *CommentClient) Hooks() []Hook {
 	return c.hooks.Comment
@@ -860,6 +1068,290 @@ func (c *CommentLikeClient) mutate(ctx context.Context, m *CommentLikeMutation) 
 	}
 }
 
+// CommentMentionClient is a client for the CommentMention schema.
+type CommentMentionClient struct {
+	config
+}
+
+// NewCommentMentionClient returns a client for the CommentMention from the given config.
+func NewCommentMentionClient(c config) *CommentMentionClient {
+	return &CommentMentionClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `commentmention.Hooks(f(g(h())))`.
+func (c *CommentMentionClient) Use(hooks ...Hook) {
+	c.hooks.CommentMention = append(c.hooks.CommentMention, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `commentmention.Intercept(f(g(h())))`.
+func (c *CommentMentionClient) Intercept(interceptors ...Interceptor) {
+	c.inters.CommentMention = append(c.inters.CommentMention, interceptors...)
+}
+
+// Create returns a builder for creating a CommentMention entity.
+func (c *CommentMentionClient) Create() *CommentMentionCreate {
+	mutation := newCommentMentionMutation(c.config, OpCreate)
+	return &CommentMentionCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of CommentMention entities.
+func (c *CommentMentionClient) CreateBulk(builders ...*CommentMentionCreate) *CommentMentionCreateBulk {
+	return &CommentMentionCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for CommentMention.
+func (c *CommentMentionClient) Update() *CommentMentionUpdate {
+	mutation := newCommentMentionMutation(c.config, OpUpdate)
+	return &CommentMentionUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *CommentMentionClient) UpdateOne(cm *CommentMention) *CommentMentionUpdateOne {
+	mutation := newCommentMentionMutation(c.config, OpUpdateOne, withCommentMention(cm))
+	return &CommentMentionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *CommentMentionClient) UpdateOneID(id int) *CommentMentionUpdateOne {
+	mutation := newCommentMentionMutation(c.config, OpUpdateOne, withCommentMentionID(id))
+	return &CommentMentionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for CommentMention.
+func (c *CommentMentionClient) Delete() *CommentMentionDelete {
+	mutation := newCommentMentionMutation(c.config, OpDelete)
+	return &CommentMentionDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *CommentMentionClient) DeleteOne(cm *CommentMention) *CommentMentionDeleteOne {
+	return c.DeleteOneID(cm.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *CommentMentionClient) DeleteOneID(id int) *CommentMentionDeleteOne {
+	builder := c.Delete().Where(commentmention.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &CommentMentionDeleteOne{builder}
+}
+
+// Query returns a query builder for CommentMention.
+func (c *CommentMentionClient) Query() *CommentMentionQuery {
+	return &CommentMentionQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeCommentMention},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a CommentMention entity by its id.
+func (c *CommentMentionClient) Get(ctx context.Context, id int) (*CommentMention, error) {
+	return c.Query().Where(commentmention.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *CommentMentionClient) GetX(ctx context.Context, id int) *CommentMention {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryUser queries the user edge of a CommentMention.
+func (c *CommentMentionClient) QueryUser(cm *CommentMention) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := cm.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(commentmention.Table, commentmention.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, commentmention.UserTable, commentmention.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(cm.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryComment queries the comment edge of a CommentMention.
+func (c *CommentMentionClient) QueryComment(cm *CommentMention) *CommentQuery {
+	query := (&CommentClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := cm.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(commentmention.Table, commentmention.FieldID, id),
+			sqlgraph.To(comment.Table, comment.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, commentmention.CommentTable, commentmention.CommentColumn),
+		)
+		fromV = sqlgraph.Neighbors(cm.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *CommentMentionClient) Hooks() []Hook {
+	return c.hooks.CommentMention
+}
+
+// Interceptors returns the client interceptors.
+func (c *CommentMentionClient) Interceptors() []Interceptor {
+	return c.inters.CommentMention
+}
+
+func (c *CommentMentionClient) mutate(ctx context.Context, m *CommentMentionMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&CommentMentionCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&CommentMentionUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&CommentMentionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&CommentMentionDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown CommentMention mutation op: %q", m.Op())
+	}
+}
+
+// HashtagClient is a client for the Hashtag schema.
+type HashtagClient struct {
+	config
+}
+
+// NewHashtagClient returns a client for the Hashtag from the given config.
+func NewHashtagClient(c config) *HashtagClient {
+	return &HashtagClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `hashtag.Hooks(f(g(h())))`.
+func (c *HashtagClient) Use(hooks ...Hook) {
+	c.hooks.Hashtag = append(c.hooks.Hashtag, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `hashtag.Intercept(f(g(h())))`.
+func (c *HashtagClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Hashtag = append(c.inters.Hashtag, interceptors...)
+}
+
+// Create returns a builder for creating a Hashtag entity.
+func (c *HashtagClient) Create() *HashtagCreate {
+	mutation := newHashtagMutation(c.config, OpCreate)
+	return &HashtagCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Hashtag entities.
+func (c *HashtagClient) CreateBulk(builders ...*HashtagCreate) *HashtagCreateBulk {
+	return &HashtagCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Hashtag.
+func (c *HashtagClient) Update() *HashtagUpdate {
+	mutation := newHashtagMutation(c.config, OpUpdate)
+	return &HashtagUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *HashtagClient) UpdateOne(h *Hashtag) *HashtagUpdateOne {
+	mutation := newHashtagMutation(c.config, OpUpdateOne, withHashtag(h))
+	return &HashtagUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *HashtagClient) UpdateOneID(id int) *HashtagUpdateOne {
+	mutation := newHashtagMutation(c.config, OpUpdateOne, withHashtagID(id))
+	return &HashtagUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Hashtag.
+func (c *HashtagClient) Delete() *HashtagDelete {
+	mutation := newHashtagMutation(c.config, OpDelete)
+	return &HashtagDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *HashtagClient) DeleteOne(h *Hashtag) *HashtagDeleteOne {
+	return c.DeleteOneID(h.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *HashtagClient) DeleteOneID(id int) *HashtagDeleteOne {
+	builder := c.Delete().Where(hashtag.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &HashtagDeleteOne{builder}
+}
+
+// Query returns a query builder for Hashtag.
+func (c *HashtagClient) Query() *HashtagQuery {
+	return &HashtagQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeHashtag},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a Hashtag entity by its id.
+func (c *HashtagClient) Get(ctx context.Context, id int) (*Hashtag, error) {
+	return c.Query().Where(hashtag.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *HashtagClient) GetX(ctx context.Context, id int) *Hashtag {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryBoardHashtag queries the board_hashtag edge of a Hashtag.
+func (c *HashtagClient) QueryBoardHashtag(h *Hashtag) *BoardHashtagQuery {
+	query := (&BoardHashtagClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := h.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(hashtag.Table, hashtag.FieldID, id),
+			sqlgraph.To(boardhashtag.Table, boardhashtag.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, hashtag.BoardHashtagTable, hashtag.BoardHashtagColumn),
+		)
+		fromV = sqlgraph.Neighbors(h.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *HashtagClient) Hooks() []Hook {
+	return c.hooks.Hashtag
+}
+
+// Interceptors returns the client interceptors.
+func (c *HashtagClient) Interceptors() []Interceptor {
+	return c.inters.Hashtag
+}
+
+func (c *HashtagClient) mutate(ctx context.Context, m *HashtagMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&HashtagCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&HashtagUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&HashtagUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&HashtagDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown Hashtag mutation op: %q", m.Op())
+	}
+}
+
 // UserClient is a client for the User schema.
 type UserClient struct {
 	config
@@ -1017,6 +1509,22 @@ func (c *UserClient) QueryComments(u *User) *CommentQuery {
 	return query
 }
 
+// QueryCommentMention queries the comment_mention edge of a User.
+func (c *UserClient) QueryCommentMention(u *User) *CommentMentionQuery {
+	query := (&CommentMentionClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := u.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(commentmention.Table, commentmention.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.CommentMentionTable, user.CommentMentionColumn),
+		)
+		fromV = sqlgraph.Neighbors(u.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *UserClient) Hooks() []Hook {
 	return c.hooks.User
@@ -1045,9 +1553,11 @@ func (c *UserClient) mutate(ctx context.Context, m *UserMutation) (Value, error)
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		Board, BoardLike, Comment, CommentLike, User []ent.Hook
+		Board, BoardHashtag, BoardLike, Comment, CommentLike, CommentMention, Hashtag,
+		User []ent.Hook
 	}
 	inters struct {
-		Board, BoardLike, Comment, CommentLike, User []ent.Interceptor
+		Board, BoardHashtag, BoardLike, Comment, CommentLike, CommentMention, Hashtag,
+		User []ent.Interceptor
 	}
 )

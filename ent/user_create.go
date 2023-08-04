@@ -14,6 +14,7 @@ import (
 	"github.com/leeeeeoy/go_study/ent/boardlike"
 	"github.com/leeeeeoy/go_study/ent/comment"
 	"github.com/leeeeeoy/go_study/ent/commentlike"
+	"github.com/leeeeeoy/go_study/ent/commentmention"
 	"github.com/leeeeeoy/go_study/ent/user"
 )
 
@@ -114,6 +115,21 @@ func (uc *UserCreate) AddComments(c ...*Comment) *UserCreate {
 		ids[i] = c[i].ID
 	}
 	return uc.AddCommentIDs(ids...)
+}
+
+// AddCommentMentionIDs adds the "comment_mention" edge to the CommentMention entity by IDs.
+func (uc *UserCreate) AddCommentMentionIDs(ids ...int) *UserCreate {
+	uc.mutation.AddCommentMentionIDs(ids...)
+	return uc
+}
+
+// AddCommentMention adds the "comment_mention" edges to the CommentMention entity.
+func (uc *UserCreate) AddCommentMention(c ...*CommentMention) *UserCreate {
+	ids := make([]int, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
+	}
+	return uc.AddCommentMentionIDs(ids...)
 }
 
 // Mutation returns the UserMutation object of the builder.
@@ -270,6 +286,22 @@ func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(comment.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := uc.mutation.CommentMentionIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.CommentMentionTable,
+			Columns: []string{user.CommentMentionColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(commentmention.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

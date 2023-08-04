@@ -12,9 +12,14 @@ var (
 	BoardsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "title", Type: field.TypeString},
-		{Name: "content", Type: field.TypeString},
+		{Name: "text", Type: field.TypeString},
 		{Name: "like_count", Type: field.TypeInt},
 		{Name: "comment_count", Type: field.TypeInt},
+		{Name: "view_count", Type: field.TypeInt},
+		{Name: "report_count", Type: field.TypeInt},
+		{Name: "status", Type: field.TypeEnum, Enums: []string{"activate", "deleted"}},
+		{Name: "language_type", Type: field.TypeString},
+		{Name: "attachments", Type: field.TypeString, Nullable: true},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
 		{Name: "user_id", Type: field.TypeInt, Nullable: true},
@@ -27,8 +32,34 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "boards_users_boards",
-				Columns:    []*schema.Column{BoardsColumns[7]},
+				Columns:    []*schema.Column{BoardsColumns[12]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
+	}
+	// BoardHashtagsColumns holds the columns for the "board_hashtags" table.
+	BoardHashtagsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "board_id", Type: field.TypeInt, Nullable: true},
+		{Name: "hashtag_id", Type: field.TypeInt, Nullable: true},
+	}
+	// BoardHashtagsTable holds the schema information for the "board_hashtags" table.
+	BoardHashtagsTable = &schema.Table{
+		Name:       "board_hashtags",
+		Columns:    BoardHashtagsColumns,
+		PrimaryKey: []*schema.Column{BoardHashtagsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "board_hashtags_boards_board_hashtag",
+				Columns:    []*schema.Column{BoardHashtagsColumns[1]},
+				RefColumns: []*schema.Column{BoardsColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "board_hashtags_hashtags_board_hashtag",
+				Columns:    []*schema.Column{BoardHashtagsColumns[2]},
+				RefColumns: []*schema.Column{HashtagsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 		},
@@ -65,6 +96,8 @@ var (
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "text", Type: field.TypeString},
 		{Name: "like_count", Type: field.TypeInt},
+		{Name: "status", Type: field.TypeEnum, Enums: []string{"activate", "deleted"}},
+		{Name: "language_type", Type: field.TypeString},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
 		{Name: "board_id", Type: field.TypeInt, Nullable: true},
@@ -78,13 +111,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "comments_boards_comments",
-				Columns:    []*schema.Column{CommentsColumns[5]},
+				Columns:    []*schema.Column{CommentsColumns[7]},
 				RefColumns: []*schema.Column{BoardsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "comments_users_comments",
-				Columns:    []*schema.Column{CommentsColumns[6]},
+				Columns:    []*schema.Column{CommentsColumns[8]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -117,6 +150,44 @@ var (
 			},
 		},
 	}
+	// CommentMentionsColumns holds the columns for the "comment_mentions" table.
+	CommentMentionsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "comment_id", Type: field.TypeInt, Nullable: true},
+		{Name: "user_id", Type: field.TypeInt, Nullable: true},
+	}
+	// CommentMentionsTable holds the schema information for the "comment_mentions" table.
+	CommentMentionsTable = &schema.Table{
+		Name:       "comment_mentions",
+		Columns:    CommentMentionsColumns,
+		PrimaryKey: []*schema.Column{CommentMentionsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "comment_mentions_comments_comment_mention",
+				Columns:    []*schema.Column{CommentMentionsColumns[1]},
+				RefColumns: []*schema.Column{CommentsColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "comment_mentions_users_comment_mention",
+				Columns:    []*schema.Column{CommentMentionsColumns[2]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
+	}
+	// HashtagsColumns holds the columns for the "hashtags" table.
+	HashtagsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "value", Type: field.TypeString},
+		{Name: "used_count", Type: field.TypeInt, Default: 0},
+	}
+	// HashtagsTable holds the schema information for the "hashtags" table.
+	HashtagsTable = &schema.Table{
+		Name:       "hashtags",
+		Columns:    HashtagsColumns,
+		PrimaryKey: []*schema.Column{HashtagsColumns[0]},
+	}
 	// UsersColumns holds the columns for the "users" table.
 	UsersColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
@@ -134,19 +205,26 @@ var (
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
 		BoardsTable,
+		BoardHashtagsTable,
 		BoardLikesTable,
 		CommentsTable,
 		CommentLikesTable,
+		CommentMentionsTable,
+		HashtagsTable,
 		UsersTable,
 	}
 )
 
 func init() {
 	BoardsTable.ForeignKeys[0].RefTable = UsersTable
+	BoardHashtagsTable.ForeignKeys[0].RefTable = BoardsTable
+	BoardHashtagsTable.ForeignKeys[1].RefTable = HashtagsTable
 	BoardLikesTable.ForeignKeys[0].RefTable = BoardsTable
 	BoardLikesTable.ForeignKeys[1].RefTable = UsersTable
 	CommentsTable.ForeignKeys[0].RefTable = BoardsTable
 	CommentsTable.ForeignKeys[1].RefTable = UsersTable
 	CommentLikesTable.ForeignKeys[0].RefTable = CommentsTable
 	CommentLikesTable.ForeignKeys[1].RefTable = UsersTable
+	CommentMentionsTable.ForeignKeys[0].RefTable = CommentsTable
+	CommentMentionsTable.ForeignKeys[1].RefTable = UsersTable
 }

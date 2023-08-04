@@ -21,6 +21,18 @@ func (f BoardFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.BoardMutation", m)
 }
 
+// The BoardHashtagFunc type is an adapter to allow the use of ordinary
+// function as BoardHashtag mutator.
+type BoardHashtagFunc func(context.Context, *ent.BoardHashtagMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f BoardHashtagFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.BoardHashtagMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.BoardHashtagMutation", m)
+}
+
 // The BoardLikeFunc type is an adapter to allow the use of ordinary
 // function as BoardLike mutator.
 type BoardLikeFunc func(context.Context, *ent.BoardLikeMutation) (ent.Value, error)
@@ -55,6 +67,30 @@ func (f CommentLikeFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value,
 		return f(ctx, mv)
 	}
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.CommentLikeMutation", m)
+}
+
+// The CommentMentionFunc type is an adapter to allow the use of ordinary
+// function as CommentMention mutator.
+type CommentMentionFunc func(context.Context, *ent.CommentMentionMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f CommentMentionFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.CommentMentionMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.CommentMentionMutation", m)
+}
+
+// The HashtagFunc type is an adapter to allow the use of ordinary
+// function as Hashtag mutator.
+type HashtagFunc func(context.Context, *ent.HashtagMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f HashtagFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.HashtagMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.HashtagMutation", m)
 }
 
 // The UserFunc type is an adapter to allow the use of ordinary

@@ -14,6 +14,7 @@ import (
 	"github.com/leeeeeoy/go_study/ent/board"
 	"github.com/leeeeeoy/go_study/ent/comment"
 	"github.com/leeeeeoy/go_study/ent/commentlike"
+	"github.com/leeeeeoy/go_study/ent/commentmention"
 	"github.com/leeeeeoy/go_study/ent/predicate"
 	"github.com/leeeeeoy/go_study/ent/user"
 )
@@ -90,6 +91,18 @@ func (cu *CommentUpdate) AddLikeCount(i int) *CommentUpdate {
 	return cu
 }
 
+// SetStatus sets the "status" field.
+func (cu *CommentUpdate) SetStatus(c comment.Status) *CommentUpdate {
+	cu.mutation.SetStatus(c)
+	return cu
+}
+
+// SetLanguageType sets the "language_type" field.
+func (cu *CommentUpdate) SetLanguageType(s string) *CommentUpdate {
+	cu.mutation.SetLanguageType(s)
+	return cu
+}
+
 // SetCreatedAt sets the "created_at" field.
 func (cu *CommentUpdate) SetCreatedAt(t time.Time) *CommentUpdate {
 	cu.mutation.SetCreatedAt(t)
@@ -135,6 +148,21 @@ func (cu *CommentUpdate) AddCommentLike(c ...*CommentLike) *CommentUpdate {
 	return cu.AddCommentLikeIDs(ids...)
 }
 
+// AddCommentMentionIDs adds the "comment_mention" edge to the CommentMention entity by IDs.
+func (cu *CommentUpdate) AddCommentMentionIDs(ids ...int) *CommentUpdate {
+	cu.mutation.AddCommentMentionIDs(ids...)
+	return cu
+}
+
+// AddCommentMention adds the "comment_mention" edges to the CommentMention entity.
+func (cu *CommentUpdate) AddCommentMention(c ...*CommentMention) *CommentUpdate {
+	ids := make([]int, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
+	}
+	return cu.AddCommentMentionIDs(ids...)
+}
+
 // Mutation returns the CommentMutation object of the builder.
 func (cu *CommentUpdate) Mutation() *CommentMutation {
 	return cu.mutation
@@ -173,6 +201,27 @@ func (cu *CommentUpdate) RemoveCommentLike(c ...*CommentLike) *CommentUpdate {
 	return cu.RemoveCommentLikeIDs(ids...)
 }
 
+// ClearCommentMention clears all "comment_mention" edges to the CommentMention entity.
+func (cu *CommentUpdate) ClearCommentMention() *CommentUpdate {
+	cu.mutation.ClearCommentMention()
+	return cu
+}
+
+// RemoveCommentMentionIDs removes the "comment_mention" edge to CommentMention entities by IDs.
+func (cu *CommentUpdate) RemoveCommentMentionIDs(ids ...int) *CommentUpdate {
+	cu.mutation.RemoveCommentMentionIDs(ids...)
+	return cu
+}
+
+// RemoveCommentMention removes "comment_mention" edges to CommentMention entities.
+func (cu *CommentUpdate) RemoveCommentMention(c ...*CommentMention) *CommentUpdate {
+	ids := make([]int, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
+	}
+	return cu.RemoveCommentMentionIDs(ids...)
+}
+
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (cu *CommentUpdate) Save(ctx context.Context) (int, error) {
 	cu.defaults()
@@ -209,7 +258,20 @@ func (cu *CommentUpdate) defaults() {
 	}
 }
 
+// check runs all checks and user-defined validators on the builder.
+func (cu *CommentUpdate) check() error {
+	if v, ok := cu.mutation.Status(); ok {
+		if err := comment.StatusValidator(v); err != nil {
+			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "Comment.status": %w`, err)}
+		}
+	}
+	return nil
+}
+
 func (cu *CommentUpdate) sqlSave(ctx context.Context) (n int, err error) {
+	if err := cu.check(); err != nil {
+		return n, err
+	}
 	_spec := sqlgraph.NewUpdateSpec(comment.Table, comment.Columns, sqlgraph.NewFieldSpec(comment.FieldID, field.TypeInt))
 	if ps := cu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
@@ -226,6 +288,12 @@ func (cu *CommentUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if value, ok := cu.mutation.AddedLikeCount(); ok {
 		_spec.AddField(comment.FieldLikeCount, field.TypeInt, value)
+	}
+	if value, ok := cu.mutation.Status(); ok {
+		_spec.SetField(comment.FieldStatus, field.TypeEnum, value)
+	}
+	if value, ok := cu.mutation.LanguageType(); ok {
+		_spec.SetField(comment.FieldLanguageType, field.TypeString, value)
 	}
 	if value, ok := cu.mutation.CreatedAt(); ok {
 		_spec.SetField(comment.FieldCreatedAt, field.TypeTime, value)
@@ -336,6 +404,51 @@ func (cu *CommentUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if cu.mutation.CommentMentionCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   comment.CommentMentionTable,
+			Columns: []string{comment.CommentMentionColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(commentmention.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := cu.mutation.RemovedCommentMentionIDs(); len(nodes) > 0 && !cu.mutation.CommentMentionCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   comment.CommentMentionTable,
+			Columns: []string{comment.CommentMentionColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(commentmention.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := cu.mutation.CommentMentionIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   comment.CommentMentionTable,
+			Columns: []string{comment.CommentMentionColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(commentmention.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, cu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{comment.Label}
@@ -415,6 +528,18 @@ func (cuo *CommentUpdateOne) AddLikeCount(i int) *CommentUpdateOne {
 	return cuo
 }
 
+// SetStatus sets the "status" field.
+func (cuo *CommentUpdateOne) SetStatus(c comment.Status) *CommentUpdateOne {
+	cuo.mutation.SetStatus(c)
+	return cuo
+}
+
+// SetLanguageType sets the "language_type" field.
+func (cuo *CommentUpdateOne) SetLanguageType(s string) *CommentUpdateOne {
+	cuo.mutation.SetLanguageType(s)
+	return cuo
+}
+
 // SetCreatedAt sets the "created_at" field.
 func (cuo *CommentUpdateOne) SetCreatedAt(t time.Time) *CommentUpdateOne {
 	cuo.mutation.SetCreatedAt(t)
@@ -460,6 +585,21 @@ func (cuo *CommentUpdateOne) AddCommentLike(c ...*CommentLike) *CommentUpdateOne
 	return cuo.AddCommentLikeIDs(ids...)
 }
 
+// AddCommentMentionIDs adds the "comment_mention" edge to the CommentMention entity by IDs.
+func (cuo *CommentUpdateOne) AddCommentMentionIDs(ids ...int) *CommentUpdateOne {
+	cuo.mutation.AddCommentMentionIDs(ids...)
+	return cuo
+}
+
+// AddCommentMention adds the "comment_mention" edges to the CommentMention entity.
+func (cuo *CommentUpdateOne) AddCommentMention(c ...*CommentMention) *CommentUpdateOne {
+	ids := make([]int, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
+	}
+	return cuo.AddCommentMentionIDs(ids...)
+}
+
 // Mutation returns the CommentMutation object of the builder.
 func (cuo *CommentUpdateOne) Mutation() *CommentMutation {
 	return cuo.mutation
@@ -496,6 +636,27 @@ func (cuo *CommentUpdateOne) RemoveCommentLike(c ...*CommentLike) *CommentUpdate
 		ids[i] = c[i].ID
 	}
 	return cuo.RemoveCommentLikeIDs(ids...)
+}
+
+// ClearCommentMention clears all "comment_mention" edges to the CommentMention entity.
+func (cuo *CommentUpdateOne) ClearCommentMention() *CommentUpdateOne {
+	cuo.mutation.ClearCommentMention()
+	return cuo
+}
+
+// RemoveCommentMentionIDs removes the "comment_mention" edge to CommentMention entities by IDs.
+func (cuo *CommentUpdateOne) RemoveCommentMentionIDs(ids ...int) *CommentUpdateOne {
+	cuo.mutation.RemoveCommentMentionIDs(ids...)
+	return cuo
+}
+
+// RemoveCommentMention removes "comment_mention" edges to CommentMention entities.
+func (cuo *CommentUpdateOne) RemoveCommentMention(c ...*CommentMention) *CommentUpdateOne {
+	ids := make([]int, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
+	}
+	return cuo.RemoveCommentMentionIDs(ids...)
 }
 
 // Where appends a list predicates to the CommentUpdate builder.
@@ -547,7 +708,20 @@ func (cuo *CommentUpdateOne) defaults() {
 	}
 }
 
+// check runs all checks and user-defined validators on the builder.
+func (cuo *CommentUpdateOne) check() error {
+	if v, ok := cuo.mutation.Status(); ok {
+		if err := comment.StatusValidator(v); err != nil {
+			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "Comment.status": %w`, err)}
+		}
+	}
+	return nil
+}
+
 func (cuo *CommentUpdateOne) sqlSave(ctx context.Context) (_node *Comment, err error) {
+	if err := cuo.check(); err != nil {
+		return _node, err
+	}
 	_spec := sqlgraph.NewUpdateSpec(comment.Table, comment.Columns, sqlgraph.NewFieldSpec(comment.FieldID, field.TypeInt))
 	id, ok := cuo.mutation.ID()
 	if !ok {
@@ -581,6 +755,12 @@ func (cuo *CommentUpdateOne) sqlSave(ctx context.Context) (_node *Comment, err e
 	}
 	if value, ok := cuo.mutation.AddedLikeCount(); ok {
 		_spec.AddField(comment.FieldLikeCount, field.TypeInt, value)
+	}
+	if value, ok := cuo.mutation.Status(); ok {
+		_spec.SetField(comment.FieldStatus, field.TypeEnum, value)
+	}
+	if value, ok := cuo.mutation.LanguageType(); ok {
+		_spec.SetField(comment.FieldLanguageType, field.TypeString, value)
 	}
 	if value, ok := cuo.mutation.CreatedAt(); ok {
 		_spec.SetField(comment.FieldCreatedAt, field.TypeTime, value)
@@ -684,6 +864,51 @@ func (cuo *CommentUpdateOne) sqlSave(ctx context.Context) (_node *Comment, err e
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(commentlike.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if cuo.mutation.CommentMentionCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   comment.CommentMentionTable,
+			Columns: []string{comment.CommentMentionColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(commentmention.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := cuo.mutation.RemovedCommentMentionIDs(); len(nodes) > 0 && !cuo.mutation.CommentMentionCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   comment.CommentMentionTable,
+			Columns: []string{comment.CommentMentionColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(commentmention.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := cuo.mutation.CommentMentionIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   comment.CommentMentionTable,
+			Columns: []string{comment.CommentMentionColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(commentmention.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

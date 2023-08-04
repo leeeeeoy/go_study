@@ -9,6 +9,7 @@ import (
 	"github.com/leeeeeoy/go_study/ent/boardlike"
 	"github.com/leeeeeoy/go_study/ent/comment"
 	"github.com/leeeeeoy/go_study/ent/commentlike"
+	"github.com/leeeeeoy/go_study/ent/hashtag"
 	"github.com/leeeeeoy/go_study/ent/schema"
 	"github.com/leeeeeoy/go_study/ent/user"
 )
@@ -19,12 +20,28 @@ import (
 func init() {
 	boardFields := schema.Board{}.Fields()
 	_ = boardFields
+	// boardDescLikeCount is the schema descriptor for like_count field.
+	boardDescLikeCount := boardFields[3].Descriptor()
+	// board.LikeCountValidator is a validator for the "like_count" field. It is called by the builders before save.
+	board.LikeCountValidator = boardDescLikeCount.Validators[0].(func(int) error)
+	// boardDescCommentCount is the schema descriptor for comment_count field.
+	boardDescCommentCount := boardFields[4].Descriptor()
+	// board.CommentCountValidator is a validator for the "comment_count" field. It is called by the builders before save.
+	board.CommentCountValidator = boardDescCommentCount.Validators[0].(func(int) error)
+	// boardDescViewCount is the schema descriptor for view_count field.
+	boardDescViewCount := boardFields[5].Descriptor()
+	// board.ViewCountValidator is a validator for the "view_count" field. It is called by the builders before save.
+	board.ViewCountValidator = boardDescViewCount.Validators[0].(func(int) error)
+	// boardDescReportCount is the schema descriptor for report_count field.
+	boardDescReportCount := boardFields[6].Descriptor()
+	// board.ReportCountValidator is a validator for the "report_count" field. It is called by the builders before save.
+	board.ReportCountValidator = boardDescReportCount.Validators[0].(func(int) error)
 	// boardDescCreatedAt is the schema descriptor for created_at field.
-	boardDescCreatedAt := boardFields[5].Descriptor()
+	boardDescCreatedAt := boardFields[10].Descriptor()
 	// board.DefaultCreatedAt holds the default value on creation for the created_at field.
 	board.DefaultCreatedAt = boardDescCreatedAt.Default.(func() time.Time)
 	// boardDescUpdatedAt is the schema descriptor for updated_at field.
-	boardDescUpdatedAt := boardFields[6].Descriptor()
+	boardDescUpdatedAt := boardFields[11].Descriptor()
 	// board.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	board.DefaultUpdatedAt = boardDescUpdatedAt.Default.(func() time.Time)
 	// board.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
@@ -38,11 +55,11 @@ func init() {
 	commentFields := schema.Comment{}.Fields()
 	_ = commentFields
 	// commentDescCreatedAt is the schema descriptor for created_at field.
-	commentDescCreatedAt := commentFields[4].Descriptor()
+	commentDescCreatedAt := commentFields[6].Descriptor()
 	// comment.DefaultCreatedAt holds the default value on creation for the created_at field.
 	comment.DefaultCreatedAt = commentDescCreatedAt.Default.(func() time.Time)
 	// commentDescUpdatedAt is the schema descriptor for updated_at field.
-	commentDescUpdatedAt := commentFields[5].Descriptor()
+	commentDescUpdatedAt := commentFields[7].Descriptor()
 	// comment.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	comment.DefaultUpdatedAt = commentDescUpdatedAt.Default.(func() time.Time)
 	// comment.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
@@ -53,6 +70,12 @@ func init() {
 	commentlikeDescCreatedAt := commentlikeFields[2].Descriptor()
 	// commentlike.DefaultCreatedAt holds the default value on creation for the created_at field.
 	commentlike.DefaultCreatedAt = commentlikeDescCreatedAt.Default.(func() time.Time)
+	hashtagFields := schema.Hashtag{}.Fields()
+	_ = hashtagFields
+	// hashtagDescUsedCount is the schema descriptor for used_count field.
+	hashtagDescUsedCount := hashtagFields[1].Descriptor()
+	// hashtag.DefaultUsedCount holds the default value on creation for the used_count field.
+	hashtag.DefaultUsedCount = hashtagDescUsedCount.Default.(int)
 	userFields := schema.User{}.Fields()
 	_ = userFields
 	// userDescCreatedAt is the schema descriptor for created_at field.

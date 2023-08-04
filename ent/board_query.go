@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/leeeeeoy/go_study/ent/board"
+	"github.com/leeeeeoy/go_study/ent/boardhashtag"
 	"github.com/leeeeeoy/go_study/ent/boardlike"
 	"github.com/leeeeeoy/go_study/ent/comment"
 	"github.com/leeeeeoy/go_study/ent/predicate"
@@ -21,13 +22,14 @@ import (
 // BoardQuery is the builder for querying Board entities.
 type BoardQuery struct {
 	config
-	ctx           *QueryContext
-	order         []board.OrderOption
-	inters        []Interceptor
-	predicates    []predicate.Board
-	withUser      *UserQuery
-	withComments  *CommentQuery
-	withBoardLike *BoardLikeQuery
+	ctx              *QueryContext
+	order            []board.OrderOption
+	inters           []Interceptor
+	predicates       []predicate.Board
+	withUser         *UserQuery
+	withComments     *CommentQuery
+	withBoardLike    *BoardLikeQuery
+	withBoardHashtag *BoardHashtagQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -123,6 +125,28 @@ func (bq *BoardQuery) QueryBoardLike() *BoardLikeQuery {
 			sqlgraph.From(board.Table, board.FieldID, selector),
 			sqlgraph.To(boardlike.Table, boardlike.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, board.BoardLikeTable, board.BoardLikeColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(bq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryBoardHashtag chains the current query on the "board_hashtag" edge.
+func (bq *BoardQuery) QueryBoardHashtag() *BoardHashtagQuery {
+	query := (&BoardHashtagClient{config: bq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := bq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := bq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(board.Table, board.FieldID, selector),
+			sqlgraph.To(boardhashtag.Table, boardhashtag.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, board.BoardHashtagTable, board.BoardHashtagColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(bq.driver.Dialect(), step)
 		return fromU, nil
@@ -317,14 +341,15 @@ func (bq *BoardQuery) Clone() *BoardQuery {
 		return nil
 	}
 	return &BoardQuery{
-		config:        bq.config,
-		ctx:           bq.ctx.Clone(),
-		order:         append([]board.OrderOption{}, bq.order...),
-		inters:        append([]Interceptor{}, bq.inters...),
-		predicates:    append([]predicate.Board{}, bq.predicates...),
-		withUser:      bq.withUser.Clone(),
-		withComments:  bq.withComments.Clone(),
-		withBoardLike: bq.withBoardLike.Clone(),
+		config:           bq.config,
+		ctx:              bq.ctx.Clone(),
+		order:            append([]board.OrderOption{}, bq.order...),
+		inters:           append([]Interceptor{}, bq.inters...),
+		predicates:       append([]predicate.Board{}, bq.predicates...),
+		withUser:         bq.withUser.Clone(),
+		withComments:     bq.withComments.Clone(),
+		withBoardLike:    bq.withBoardLike.Clone(),
+		withBoardHashtag: bq.withBoardHashtag.Clone(),
 		// clone intermediate query.
 		sql:  bq.sql.Clone(),
 		path: bq.path,
@@ -361,6 +386,17 @@ func (bq *BoardQuery) WithBoardLike(opts ...func(*BoardLikeQuery)) *BoardQuery {
 		opt(query)
 	}
 	bq.withBoardLike = query
+	return bq
+}
+
+// WithBoardHashtag tells the query-builder to eager-load the nodes that are connected to
+// the "board_hashtag" edge. The optional arguments are used to configure the query builder of the edge.
+func (bq *BoardQuery) WithBoardHashtag(opts ...func(*BoardHashtagQuery)) *BoardQuery {
+	query := (&BoardHashtagClient{config: bq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	bq.withBoardHashtag = query
 	return bq
 }
 
@@ -442,10 +478,11 @@ func (bq *BoardQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Board,
 	var (
 		nodes       = []*Board{}
 		_spec       = bq.querySpec()
-		loadedTypes = [3]bool{
+		loadedTypes = [4]bool{
 			bq.withUser != nil,
 			bq.withComments != nil,
 			bq.withBoardLike != nil,
+			bq.withBoardHashtag != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -483,6 +520,13 @@ func (bq *BoardQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Board,
 		if err := bq.loadBoardLike(ctx, query, nodes,
 			func(n *Board) { n.Edges.BoardLike = []*BoardLike{} },
 			func(n *Board, e *BoardLike) { n.Edges.BoardLike = append(n.Edges.BoardLike, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := bq.withBoardHashtag; query != nil {
+		if err := bq.loadBoardHashtag(ctx, query, nodes,
+			func(n *Board) { n.Edges.BoardHashtag = []*BoardHashtag{} },
+			func(n *Board, e *BoardHashtag) { n.Edges.BoardHashtag = append(n.Edges.BoardHashtag, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -563,6 +607,36 @@ func (bq *BoardQuery) loadBoardLike(ctx context.Context, query *BoardLikeQuery, 
 	}
 	query.Where(predicate.BoardLike(func(s *sql.Selector) {
 		s.Where(sql.InValues(s.C(board.BoardLikeColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.BoardID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "board_id" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (bq *BoardQuery) loadBoardHashtag(ctx context.Context, query *BoardHashtagQuery, nodes []*Board, init func(*Board), assign func(*Board, *BoardHashtag)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int]*Board)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(boardhashtag.FieldBoardID)
+	}
+	query.Where(predicate.BoardHashtag(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(board.BoardHashtagColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {

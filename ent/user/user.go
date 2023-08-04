@@ -30,6 +30,8 @@ const (
 	EdgeCommentLike = "comment_like"
 	// EdgeComments holds the string denoting the comments edge name in mutations.
 	EdgeComments = "comments"
+	// EdgeCommentMention holds the string denoting the comment_mention edge name in mutations.
+	EdgeCommentMention = "comment_mention"
 	// Table holds the table name of the user in the database.
 	Table = "users"
 	// BoardsTable is the table that holds the boards relation/edge.
@@ -60,6 +62,13 @@ const (
 	CommentsInverseTable = "comments"
 	// CommentsColumn is the table column denoting the comments relation/edge.
 	CommentsColumn = "user_id"
+	// CommentMentionTable is the table that holds the comment_mention relation/edge.
+	CommentMentionTable = "comment_mentions"
+	// CommentMentionInverseTable is the table name for the CommentMention entity.
+	// It exists in this package in order to avoid circular dependency with the "commentmention" package.
+	CommentMentionInverseTable = "comment_mentions"
+	// CommentMentionColumn is the table column denoting the comment_mention relation/edge.
+	CommentMentionColumn = "user_id"
 )
 
 // Columns holds all SQL columns for user fields.
@@ -169,6 +178,20 @@ func ByComments(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newCommentsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// ByCommentMentionCount orders the results by comment_mention count.
+func ByCommentMentionCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newCommentMentionStep(), opts...)
+	}
+}
+
+// ByCommentMention orders the results by comment_mention terms.
+func ByCommentMention(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newCommentMentionStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newBoardsStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -195,5 +218,12 @@ func newCommentsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(CommentsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, CommentsTable, CommentsColumn),
+	)
+}
+func newCommentMentionStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(CommentMentionInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, CommentMentionTable, CommentMentionColumn),
 	)
 }

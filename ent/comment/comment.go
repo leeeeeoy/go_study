@@ -3,6 +3,7 @@
 package comment
 
 import (
+	"fmt"
 	"time"
 
 	"entgo.io/ent/dialect/sql"
@@ -22,6 +23,10 @@ const (
 	FieldBoardID = "board_id"
 	// FieldLikeCount holds the string denoting the like_count field in the database.
 	FieldLikeCount = "like_count"
+	// FieldStatus holds the string denoting the status field in the database.
+	FieldStatus = "status"
+	// FieldLanguageType holds the string denoting the language_type field in the database.
+	FieldLanguageType = "language_type"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
 	FieldCreatedAt = "created_at"
 	// FieldUpdatedAt holds the string denoting the updated_at field in the database.
@@ -32,6 +37,8 @@ const (
 	EdgeUser = "user"
 	// EdgeCommentLike holds the string denoting the comment_like edge name in mutations.
 	EdgeCommentLike = "comment_like"
+	// EdgeCommentMention holds the string denoting the comment_mention edge name in mutations.
+	EdgeCommentMention = "comment_mention"
 	// Table holds the table name of the comment in the database.
 	Table = "comments"
 	// BoardTable is the table that holds the board relation/edge.
@@ -55,6 +62,13 @@ const (
 	CommentLikeInverseTable = "comment_likes"
 	// CommentLikeColumn is the table column denoting the comment_like relation/edge.
 	CommentLikeColumn = "comment_id"
+	// CommentMentionTable is the table that holds the comment_mention relation/edge.
+	CommentMentionTable = "comment_mentions"
+	// CommentMentionInverseTable is the table name for the CommentMention entity.
+	// It exists in this package in order to avoid circular dependency with the "commentmention" package.
+	CommentMentionInverseTable = "comment_mentions"
+	// CommentMentionColumn is the table column denoting the comment_mention relation/edge.
+	CommentMentionColumn = "comment_id"
 )
 
 // Columns holds all SQL columns for comment fields.
@@ -64,6 +78,8 @@ var Columns = []string{
 	FieldUserID,
 	FieldBoardID,
 	FieldLikeCount,
+	FieldStatus,
+	FieldLanguageType,
 	FieldCreatedAt,
 	FieldUpdatedAt,
 }
@@ -86,6 +102,29 @@ var (
 	// UpdateDefaultUpdatedAt holds the default value on update for the "updated_at" field.
 	UpdateDefaultUpdatedAt func() time.Time
 )
+
+// Status defines the type for the "status" enum field.
+type Status string
+
+// Status values.
+const (
+	StatusActivate Status = "activate"
+	StatusDeleted  Status = "deleted"
+)
+
+func (s Status) String() string {
+	return string(s)
+}
+
+// StatusValidator is a validator for the "status" field enum values. It is called by the builders before save.
+func StatusValidator(s Status) error {
+	switch s {
+	case StatusActivate, StatusDeleted:
+		return nil
+	default:
+		return fmt.Errorf("comment: invalid enum value for status field: %q", s)
+	}
+}
 
 // OrderOption defines the ordering options for the Comment queries.
 type OrderOption func(*sql.Selector)
@@ -113,6 +152,16 @@ func ByBoardID(opts ...sql.OrderTermOption) OrderOption {
 // ByLikeCount orders the results by the like_count field.
 func ByLikeCount(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldLikeCount, opts...).ToFunc()
+}
+
+// ByStatus orders the results by the status field.
+func ByStatus(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldStatus, opts...).ToFunc()
+}
+
+// ByLanguageType orders the results by the language_type field.
+func ByLanguageType(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldLanguageType, opts...).ToFunc()
 }
 
 // ByCreatedAt orders the results by the created_at field.
@@ -152,6 +201,20 @@ func ByCommentLike(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newCommentLikeStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// ByCommentMentionCount orders the results by comment_mention count.
+func ByCommentMentionCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newCommentMentionStep(), opts...)
+	}
+}
+
+// ByCommentMention orders the results by comment_mention terms.
+func ByCommentMention(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newCommentMentionStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newBoardStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -171,5 +234,12 @@ func newCommentLikeStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(CommentLikeInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, CommentLikeTable, CommentLikeColumn),
+	)
+}
+func newCommentMentionStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(CommentMentionInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, CommentMentionTable, CommentMentionColumn),
 	)
 }

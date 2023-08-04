@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/leeeeeoy/go_study/ent/board"
+	"github.com/leeeeeoy/go_study/ent/boardhashtag"
 	"github.com/leeeeeoy/go_study/ent/boardlike"
 	"github.com/leeeeeoy/go_study/ent/comment"
 	"github.com/leeeeeoy/go_study/ent/predicate"
@@ -37,9 +38,9 @@ func (bu *BoardUpdate) SetTitle(s string) *BoardUpdate {
 	return bu
 }
 
-// SetContent sets the "content" field.
-func (bu *BoardUpdate) SetContent(s string) *BoardUpdate {
-	bu.mutation.SetContent(s)
+// SetText sets the "text" field.
+func (bu *BoardUpdate) SetText(s string) *BoardUpdate {
+	bu.mutation.SetText(s)
 	return bu
 }
 
@@ -86,6 +87,64 @@ func (bu *BoardUpdate) SetCommentCount(i int) *BoardUpdate {
 // AddCommentCount adds i to the "comment_count" field.
 func (bu *BoardUpdate) AddCommentCount(i int) *BoardUpdate {
 	bu.mutation.AddCommentCount(i)
+	return bu
+}
+
+// SetViewCount sets the "view_count" field.
+func (bu *BoardUpdate) SetViewCount(i int) *BoardUpdate {
+	bu.mutation.ResetViewCount()
+	bu.mutation.SetViewCount(i)
+	return bu
+}
+
+// AddViewCount adds i to the "view_count" field.
+func (bu *BoardUpdate) AddViewCount(i int) *BoardUpdate {
+	bu.mutation.AddViewCount(i)
+	return bu
+}
+
+// SetReportCount sets the "report_count" field.
+func (bu *BoardUpdate) SetReportCount(i int) *BoardUpdate {
+	bu.mutation.ResetReportCount()
+	bu.mutation.SetReportCount(i)
+	return bu
+}
+
+// AddReportCount adds i to the "report_count" field.
+func (bu *BoardUpdate) AddReportCount(i int) *BoardUpdate {
+	bu.mutation.AddReportCount(i)
+	return bu
+}
+
+// SetStatus sets the "status" field.
+func (bu *BoardUpdate) SetStatus(b board.Status) *BoardUpdate {
+	bu.mutation.SetStatus(b)
+	return bu
+}
+
+// SetLanguageType sets the "language_type" field.
+func (bu *BoardUpdate) SetLanguageType(s string) *BoardUpdate {
+	bu.mutation.SetLanguageType(s)
+	return bu
+}
+
+// SetAttachments sets the "attachments" field.
+func (bu *BoardUpdate) SetAttachments(s string) *BoardUpdate {
+	bu.mutation.SetAttachments(s)
+	return bu
+}
+
+// SetNillableAttachments sets the "attachments" field if the given value is not nil.
+func (bu *BoardUpdate) SetNillableAttachments(s *string) *BoardUpdate {
+	if s != nil {
+		bu.SetAttachments(*s)
+	}
+	return bu
+}
+
+// ClearAttachments clears the value of the "attachments" field.
+func (bu *BoardUpdate) ClearAttachments() *BoardUpdate {
+	bu.mutation.ClearAttachments()
 	return bu
 }
 
@@ -144,6 +203,21 @@ func (bu *BoardUpdate) AddBoardLike(b ...*BoardLike) *BoardUpdate {
 	return bu.AddBoardLikeIDs(ids...)
 }
 
+// AddBoardHashtagIDs adds the "board_hashtag" edge to the BoardHashtag entity by IDs.
+func (bu *BoardUpdate) AddBoardHashtagIDs(ids ...int) *BoardUpdate {
+	bu.mutation.AddBoardHashtagIDs(ids...)
+	return bu
+}
+
+// AddBoardHashtag adds the "board_hashtag" edges to the BoardHashtag entity.
+func (bu *BoardUpdate) AddBoardHashtag(b ...*BoardHashtag) *BoardUpdate {
+	ids := make([]int, len(b))
+	for i := range b {
+		ids[i] = b[i].ID
+	}
+	return bu.AddBoardHashtagIDs(ids...)
+}
+
 // Mutation returns the BoardMutation object of the builder.
 func (bu *BoardUpdate) Mutation() *BoardMutation {
 	return bu.mutation
@@ -197,6 +271,27 @@ func (bu *BoardUpdate) RemoveBoardLike(b ...*BoardLike) *BoardUpdate {
 	return bu.RemoveBoardLikeIDs(ids...)
 }
 
+// ClearBoardHashtag clears all "board_hashtag" edges to the BoardHashtag entity.
+func (bu *BoardUpdate) ClearBoardHashtag() *BoardUpdate {
+	bu.mutation.ClearBoardHashtag()
+	return bu
+}
+
+// RemoveBoardHashtagIDs removes the "board_hashtag" edge to BoardHashtag entities by IDs.
+func (bu *BoardUpdate) RemoveBoardHashtagIDs(ids ...int) *BoardUpdate {
+	bu.mutation.RemoveBoardHashtagIDs(ids...)
+	return bu
+}
+
+// RemoveBoardHashtag removes "board_hashtag" edges to BoardHashtag entities.
+func (bu *BoardUpdate) RemoveBoardHashtag(b ...*BoardHashtag) *BoardUpdate {
+	ids := make([]int, len(b))
+	for i := range b {
+		ids[i] = b[i].ID
+	}
+	return bu.RemoveBoardHashtagIDs(ids...)
+}
+
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (bu *BoardUpdate) Save(ctx context.Context) (int, error) {
 	bu.defaults()
@@ -233,7 +328,40 @@ func (bu *BoardUpdate) defaults() {
 	}
 }
 
+// check runs all checks and user-defined validators on the builder.
+func (bu *BoardUpdate) check() error {
+	if v, ok := bu.mutation.LikeCount(); ok {
+		if err := board.LikeCountValidator(v); err != nil {
+			return &ValidationError{Name: "like_count", err: fmt.Errorf(`ent: validator failed for field "Board.like_count": %w`, err)}
+		}
+	}
+	if v, ok := bu.mutation.CommentCount(); ok {
+		if err := board.CommentCountValidator(v); err != nil {
+			return &ValidationError{Name: "comment_count", err: fmt.Errorf(`ent: validator failed for field "Board.comment_count": %w`, err)}
+		}
+	}
+	if v, ok := bu.mutation.ViewCount(); ok {
+		if err := board.ViewCountValidator(v); err != nil {
+			return &ValidationError{Name: "view_count", err: fmt.Errorf(`ent: validator failed for field "Board.view_count": %w`, err)}
+		}
+	}
+	if v, ok := bu.mutation.ReportCount(); ok {
+		if err := board.ReportCountValidator(v); err != nil {
+			return &ValidationError{Name: "report_count", err: fmt.Errorf(`ent: validator failed for field "Board.report_count": %w`, err)}
+		}
+	}
+	if v, ok := bu.mutation.Status(); ok {
+		if err := board.StatusValidator(v); err != nil {
+			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "Board.status": %w`, err)}
+		}
+	}
+	return nil
+}
+
 func (bu *BoardUpdate) sqlSave(ctx context.Context) (n int, err error) {
+	if err := bu.check(); err != nil {
+		return n, err
+	}
 	_spec := sqlgraph.NewUpdateSpec(board.Table, board.Columns, sqlgraph.NewFieldSpec(board.FieldID, field.TypeInt))
 	if ps := bu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
@@ -245,8 +373,8 @@ func (bu *BoardUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := bu.mutation.Title(); ok {
 		_spec.SetField(board.FieldTitle, field.TypeString, value)
 	}
-	if value, ok := bu.mutation.Content(); ok {
-		_spec.SetField(board.FieldContent, field.TypeString, value)
+	if value, ok := bu.mutation.Text(); ok {
+		_spec.SetField(board.FieldText, field.TypeString, value)
 	}
 	if value, ok := bu.mutation.LikeCount(); ok {
 		_spec.SetField(board.FieldLikeCount, field.TypeInt, value)
@@ -259,6 +387,30 @@ func (bu *BoardUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if value, ok := bu.mutation.AddedCommentCount(); ok {
 		_spec.AddField(board.FieldCommentCount, field.TypeInt, value)
+	}
+	if value, ok := bu.mutation.ViewCount(); ok {
+		_spec.SetField(board.FieldViewCount, field.TypeInt, value)
+	}
+	if value, ok := bu.mutation.AddedViewCount(); ok {
+		_spec.AddField(board.FieldViewCount, field.TypeInt, value)
+	}
+	if value, ok := bu.mutation.ReportCount(); ok {
+		_spec.SetField(board.FieldReportCount, field.TypeInt, value)
+	}
+	if value, ok := bu.mutation.AddedReportCount(); ok {
+		_spec.AddField(board.FieldReportCount, field.TypeInt, value)
+	}
+	if value, ok := bu.mutation.Status(); ok {
+		_spec.SetField(board.FieldStatus, field.TypeEnum, value)
+	}
+	if value, ok := bu.mutation.LanguageType(); ok {
+		_spec.SetField(board.FieldLanguageType, field.TypeString, value)
+	}
+	if value, ok := bu.mutation.Attachments(); ok {
+		_spec.SetField(board.FieldAttachments, field.TypeString, value)
+	}
+	if bu.mutation.AttachmentsCleared() {
+		_spec.ClearField(board.FieldAttachments, field.TypeString)
 	}
 	if value, ok := bu.mutation.CreatedAt(); ok {
 		_spec.SetField(board.FieldCreatedAt, field.TypeTime, value)
@@ -385,6 +537,51 @@ func (bu *BoardUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if bu.mutation.BoardHashtagCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   board.BoardHashtagTable,
+			Columns: []string{board.BoardHashtagColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(boardhashtag.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := bu.mutation.RemovedBoardHashtagIDs(); len(nodes) > 0 && !bu.mutation.BoardHashtagCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   board.BoardHashtagTable,
+			Columns: []string{board.BoardHashtagColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(boardhashtag.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := bu.mutation.BoardHashtagIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   board.BoardHashtagTable,
+			Columns: []string{board.BoardHashtagColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(boardhashtag.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, bu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{board.Label}
@@ -411,9 +608,9 @@ func (buo *BoardUpdateOne) SetTitle(s string) *BoardUpdateOne {
 	return buo
 }
 
-// SetContent sets the "content" field.
-func (buo *BoardUpdateOne) SetContent(s string) *BoardUpdateOne {
-	buo.mutation.SetContent(s)
+// SetText sets the "text" field.
+func (buo *BoardUpdateOne) SetText(s string) *BoardUpdateOne {
+	buo.mutation.SetText(s)
 	return buo
 }
 
@@ -460,6 +657,64 @@ func (buo *BoardUpdateOne) SetCommentCount(i int) *BoardUpdateOne {
 // AddCommentCount adds i to the "comment_count" field.
 func (buo *BoardUpdateOne) AddCommentCount(i int) *BoardUpdateOne {
 	buo.mutation.AddCommentCount(i)
+	return buo
+}
+
+// SetViewCount sets the "view_count" field.
+func (buo *BoardUpdateOne) SetViewCount(i int) *BoardUpdateOne {
+	buo.mutation.ResetViewCount()
+	buo.mutation.SetViewCount(i)
+	return buo
+}
+
+// AddViewCount adds i to the "view_count" field.
+func (buo *BoardUpdateOne) AddViewCount(i int) *BoardUpdateOne {
+	buo.mutation.AddViewCount(i)
+	return buo
+}
+
+// SetReportCount sets the "report_count" field.
+func (buo *BoardUpdateOne) SetReportCount(i int) *BoardUpdateOne {
+	buo.mutation.ResetReportCount()
+	buo.mutation.SetReportCount(i)
+	return buo
+}
+
+// AddReportCount adds i to the "report_count" field.
+func (buo *BoardUpdateOne) AddReportCount(i int) *BoardUpdateOne {
+	buo.mutation.AddReportCount(i)
+	return buo
+}
+
+// SetStatus sets the "status" field.
+func (buo *BoardUpdateOne) SetStatus(b board.Status) *BoardUpdateOne {
+	buo.mutation.SetStatus(b)
+	return buo
+}
+
+// SetLanguageType sets the "language_type" field.
+func (buo *BoardUpdateOne) SetLanguageType(s string) *BoardUpdateOne {
+	buo.mutation.SetLanguageType(s)
+	return buo
+}
+
+// SetAttachments sets the "attachments" field.
+func (buo *BoardUpdateOne) SetAttachments(s string) *BoardUpdateOne {
+	buo.mutation.SetAttachments(s)
+	return buo
+}
+
+// SetNillableAttachments sets the "attachments" field if the given value is not nil.
+func (buo *BoardUpdateOne) SetNillableAttachments(s *string) *BoardUpdateOne {
+	if s != nil {
+		buo.SetAttachments(*s)
+	}
+	return buo
+}
+
+// ClearAttachments clears the value of the "attachments" field.
+func (buo *BoardUpdateOne) ClearAttachments() *BoardUpdateOne {
+	buo.mutation.ClearAttachments()
 	return buo
 }
 
@@ -518,6 +773,21 @@ func (buo *BoardUpdateOne) AddBoardLike(b ...*BoardLike) *BoardUpdateOne {
 	return buo.AddBoardLikeIDs(ids...)
 }
 
+// AddBoardHashtagIDs adds the "board_hashtag" edge to the BoardHashtag entity by IDs.
+func (buo *BoardUpdateOne) AddBoardHashtagIDs(ids ...int) *BoardUpdateOne {
+	buo.mutation.AddBoardHashtagIDs(ids...)
+	return buo
+}
+
+// AddBoardHashtag adds the "board_hashtag" edges to the BoardHashtag entity.
+func (buo *BoardUpdateOne) AddBoardHashtag(b ...*BoardHashtag) *BoardUpdateOne {
+	ids := make([]int, len(b))
+	for i := range b {
+		ids[i] = b[i].ID
+	}
+	return buo.AddBoardHashtagIDs(ids...)
+}
+
 // Mutation returns the BoardMutation object of the builder.
 func (buo *BoardUpdateOne) Mutation() *BoardMutation {
 	return buo.mutation
@@ -571,6 +841,27 @@ func (buo *BoardUpdateOne) RemoveBoardLike(b ...*BoardLike) *BoardUpdateOne {
 	return buo.RemoveBoardLikeIDs(ids...)
 }
 
+// ClearBoardHashtag clears all "board_hashtag" edges to the BoardHashtag entity.
+func (buo *BoardUpdateOne) ClearBoardHashtag() *BoardUpdateOne {
+	buo.mutation.ClearBoardHashtag()
+	return buo
+}
+
+// RemoveBoardHashtagIDs removes the "board_hashtag" edge to BoardHashtag entities by IDs.
+func (buo *BoardUpdateOne) RemoveBoardHashtagIDs(ids ...int) *BoardUpdateOne {
+	buo.mutation.RemoveBoardHashtagIDs(ids...)
+	return buo
+}
+
+// RemoveBoardHashtag removes "board_hashtag" edges to BoardHashtag entities.
+func (buo *BoardUpdateOne) RemoveBoardHashtag(b ...*BoardHashtag) *BoardUpdateOne {
+	ids := make([]int, len(b))
+	for i := range b {
+		ids[i] = b[i].ID
+	}
+	return buo.RemoveBoardHashtagIDs(ids...)
+}
+
 // Where appends a list predicates to the BoardUpdate builder.
 func (buo *BoardUpdateOne) Where(ps ...predicate.Board) *BoardUpdateOne {
 	buo.mutation.Where(ps...)
@@ -620,7 +911,40 @@ func (buo *BoardUpdateOne) defaults() {
 	}
 }
 
+// check runs all checks and user-defined validators on the builder.
+func (buo *BoardUpdateOne) check() error {
+	if v, ok := buo.mutation.LikeCount(); ok {
+		if err := board.LikeCountValidator(v); err != nil {
+			return &ValidationError{Name: "like_count", err: fmt.Errorf(`ent: validator failed for field "Board.like_count": %w`, err)}
+		}
+	}
+	if v, ok := buo.mutation.CommentCount(); ok {
+		if err := board.CommentCountValidator(v); err != nil {
+			return &ValidationError{Name: "comment_count", err: fmt.Errorf(`ent: validator failed for field "Board.comment_count": %w`, err)}
+		}
+	}
+	if v, ok := buo.mutation.ViewCount(); ok {
+		if err := board.ViewCountValidator(v); err != nil {
+			return &ValidationError{Name: "view_count", err: fmt.Errorf(`ent: validator failed for field "Board.view_count": %w`, err)}
+		}
+	}
+	if v, ok := buo.mutation.ReportCount(); ok {
+		if err := board.ReportCountValidator(v); err != nil {
+			return &ValidationError{Name: "report_count", err: fmt.Errorf(`ent: validator failed for field "Board.report_count": %w`, err)}
+		}
+	}
+	if v, ok := buo.mutation.Status(); ok {
+		if err := board.StatusValidator(v); err != nil {
+			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "Board.status": %w`, err)}
+		}
+	}
+	return nil
+}
+
 func (buo *BoardUpdateOne) sqlSave(ctx context.Context) (_node *Board, err error) {
+	if err := buo.check(); err != nil {
+		return _node, err
+	}
 	_spec := sqlgraph.NewUpdateSpec(board.Table, board.Columns, sqlgraph.NewFieldSpec(board.FieldID, field.TypeInt))
 	id, ok := buo.mutation.ID()
 	if !ok {
@@ -649,8 +973,8 @@ func (buo *BoardUpdateOne) sqlSave(ctx context.Context) (_node *Board, err error
 	if value, ok := buo.mutation.Title(); ok {
 		_spec.SetField(board.FieldTitle, field.TypeString, value)
 	}
-	if value, ok := buo.mutation.Content(); ok {
-		_spec.SetField(board.FieldContent, field.TypeString, value)
+	if value, ok := buo.mutation.Text(); ok {
+		_spec.SetField(board.FieldText, field.TypeString, value)
 	}
 	if value, ok := buo.mutation.LikeCount(); ok {
 		_spec.SetField(board.FieldLikeCount, field.TypeInt, value)
@@ -663,6 +987,30 @@ func (buo *BoardUpdateOne) sqlSave(ctx context.Context) (_node *Board, err error
 	}
 	if value, ok := buo.mutation.AddedCommentCount(); ok {
 		_spec.AddField(board.FieldCommentCount, field.TypeInt, value)
+	}
+	if value, ok := buo.mutation.ViewCount(); ok {
+		_spec.SetField(board.FieldViewCount, field.TypeInt, value)
+	}
+	if value, ok := buo.mutation.AddedViewCount(); ok {
+		_spec.AddField(board.FieldViewCount, field.TypeInt, value)
+	}
+	if value, ok := buo.mutation.ReportCount(); ok {
+		_spec.SetField(board.FieldReportCount, field.TypeInt, value)
+	}
+	if value, ok := buo.mutation.AddedReportCount(); ok {
+		_spec.AddField(board.FieldReportCount, field.TypeInt, value)
+	}
+	if value, ok := buo.mutation.Status(); ok {
+		_spec.SetField(board.FieldStatus, field.TypeEnum, value)
+	}
+	if value, ok := buo.mutation.LanguageType(); ok {
+		_spec.SetField(board.FieldLanguageType, field.TypeString, value)
+	}
+	if value, ok := buo.mutation.Attachments(); ok {
+		_spec.SetField(board.FieldAttachments, field.TypeString, value)
+	}
+	if buo.mutation.AttachmentsCleared() {
+		_spec.ClearField(board.FieldAttachments, field.TypeString)
 	}
 	if value, ok := buo.mutation.CreatedAt(); ok {
 		_spec.SetField(board.FieldCreatedAt, field.TypeTime, value)
@@ -782,6 +1130,51 @@ func (buo *BoardUpdateOne) sqlSave(ctx context.Context) (_node *Board, err error
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(boardlike.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if buo.mutation.BoardHashtagCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   board.BoardHashtagTable,
+			Columns: []string{board.BoardHashtagColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(boardhashtag.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := buo.mutation.RemovedBoardHashtagIDs(); len(nodes) > 0 && !buo.mutation.BoardHashtagCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   board.BoardHashtagTable,
+			Columns: []string{board.BoardHashtagColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(boardhashtag.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := buo.mutation.BoardHashtagIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   board.BoardHashtagTable,
+			Columns: []string{board.BoardHashtagColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(boardhashtag.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

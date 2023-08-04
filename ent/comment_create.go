@@ -13,6 +13,7 @@ import (
 	"github.com/leeeeeoy/go_study/ent/board"
 	"github.com/leeeeeoy/go_study/ent/comment"
 	"github.com/leeeeeoy/go_study/ent/commentlike"
+	"github.com/leeeeeoy/go_study/ent/commentmention"
 	"github.com/leeeeeoy/go_study/ent/user"
 )
 
@@ -60,6 +61,18 @@ func (cc *CommentCreate) SetNillableBoardID(i *int) *CommentCreate {
 // SetLikeCount sets the "like_count" field.
 func (cc *CommentCreate) SetLikeCount(i int) *CommentCreate {
 	cc.mutation.SetLikeCount(i)
+	return cc
+}
+
+// SetStatus sets the "status" field.
+func (cc *CommentCreate) SetStatus(c comment.Status) *CommentCreate {
+	cc.mutation.SetStatus(c)
+	return cc
+}
+
+// SetLanguageType sets the "language_type" field.
+func (cc *CommentCreate) SetLanguageType(s string) *CommentCreate {
+	cc.mutation.SetLanguageType(s)
 	return cc
 }
 
@@ -116,6 +129,21 @@ func (cc *CommentCreate) AddCommentLike(c ...*CommentLike) *CommentCreate {
 	return cc.AddCommentLikeIDs(ids...)
 }
 
+// AddCommentMentionIDs adds the "comment_mention" edge to the CommentMention entity by IDs.
+func (cc *CommentCreate) AddCommentMentionIDs(ids ...int) *CommentCreate {
+	cc.mutation.AddCommentMentionIDs(ids...)
+	return cc
+}
+
+// AddCommentMention adds the "comment_mention" edges to the CommentMention entity.
+func (cc *CommentCreate) AddCommentMention(c ...*CommentMention) *CommentCreate {
+	ids := make([]int, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
+	}
+	return cc.AddCommentMentionIDs(ids...)
+}
+
 // Mutation returns the CommentMutation object of the builder.
 func (cc *CommentCreate) Mutation() *CommentMutation {
 	return cc.mutation
@@ -169,6 +197,17 @@ func (cc *CommentCreate) check() error {
 	if _, ok := cc.mutation.LikeCount(); !ok {
 		return &ValidationError{Name: "like_count", err: errors.New(`ent: missing required field "Comment.like_count"`)}
 	}
+	if _, ok := cc.mutation.Status(); !ok {
+		return &ValidationError{Name: "status", err: errors.New(`ent: missing required field "Comment.status"`)}
+	}
+	if v, ok := cc.mutation.Status(); ok {
+		if err := comment.StatusValidator(v); err != nil {
+			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "Comment.status": %w`, err)}
+		}
+	}
+	if _, ok := cc.mutation.LanguageType(); !ok {
+		return &ValidationError{Name: "language_type", err: errors.New(`ent: missing required field "Comment.language_type"`)}
+	}
 	if _, ok := cc.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "Comment.created_at"`)}
 	}
@@ -208,6 +247,14 @@ func (cc *CommentCreate) createSpec() (*Comment, *sqlgraph.CreateSpec) {
 	if value, ok := cc.mutation.LikeCount(); ok {
 		_spec.SetField(comment.FieldLikeCount, field.TypeInt, value)
 		_node.LikeCount = value
+	}
+	if value, ok := cc.mutation.Status(); ok {
+		_spec.SetField(comment.FieldStatus, field.TypeEnum, value)
+		_node.Status = value
+	}
+	if value, ok := cc.mutation.LanguageType(); ok {
+		_spec.SetField(comment.FieldLanguageType, field.TypeString, value)
+		_node.LanguageType = value
 	}
 	if value, ok := cc.mutation.CreatedAt(); ok {
 		_spec.SetField(comment.FieldCreatedAt, field.TypeTime, value)
@@ -260,6 +307,22 @@ func (cc *CommentCreate) createSpec() (*Comment, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(commentlike.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := cc.mutation.CommentMentionIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   comment.CommentMentionTable,
+			Columns: []string{comment.CommentMentionColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(commentmention.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

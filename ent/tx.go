@@ -14,12 +14,18 @@ type Tx struct {
 	config
 	// Board is the client for interacting with the Board builders.
 	Board *BoardClient
+	// BoardHashtag is the client for interacting with the BoardHashtag builders.
+	BoardHashtag *BoardHashtagClient
 	// BoardLike is the client for interacting with the BoardLike builders.
 	BoardLike *BoardLikeClient
 	// Comment is the client for interacting with the Comment builders.
 	Comment *CommentClient
 	// CommentLike is the client for interacting with the CommentLike builders.
 	CommentLike *CommentLikeClient
+	// CommentMention is the client for interacting with the CommentMention builders.
+	CommentMention *CommentMentionClient
+	// Hashtag is the client for interacting with the Hashtag builders.
+	Hashtag *HashtagClient
 	// User is the client for interacting with the User builders.
 	User *UserClient
 
@@ -154,9 +160,12 @@ func (tx *Tx) Client() *Client {
 
 func (tx *Tx) init() {
 	tx.Board = NewBoardClient(tx.config)
+	tx.BoardHashtag = NewBoardHashtagClient(tx.config)
 	tx.BoardLike = NewBoardLikeClient(tx.config)
 	tx.Comment = NewCommentClient(tx.config)
 	tx.CommentLike = NewCommentLikeClient(tx.config)
+	tx.CommentMention = NewCommentMentionClient(tx.config)
+	tx.Hashtag = NewHashtagClient(tx.config)
 	tx.User = NewUserClient(tx.config)
 }
 

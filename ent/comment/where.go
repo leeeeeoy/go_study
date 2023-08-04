@@ -75,6 +75,11 @@ func LikeCount(v int) predicate.Comment {
 	return predicate.Comment(sql.FieldEQ(FieldLikeCount, v))
 }
 
+// LanguageType applies equality check predicate on the "language_type" field. It's identical to LanguageTypeEQ.
+func LanguageType(v string) predicate.Comment {
+	return predicate.Comment(sql.FieldEQ(FieldLanguageType, v))
+}
+
 // CreatedAt applies equality check predicate on the "created_at" field. It's identical to CreatedAtEQ.
 func CreatedAt(v time.Time) predicate.Comment {
 	return predicate.Comment(sql.FieldEQ(FieldCreatedAt, v))
@@ -250,6 +255,91 @@ func LikeCountLTE(v int) predicate.Comment {
 	return predicate.Comment(sql.FieldLTE(FieldLikeCount, v))
 }
 
+// StatusEQ applies the EQ predicate on the "status" field.
+func StatusEQ(v Status) predicate.Comment {
+	return predicate.Comment(sql.FieldEQ(FieldStatus, v))
+}
+
+// StatusNEQ applies the NEQ predicate on the "status" field.
+func StatusNEQ(v Status) predicate.Comment {
+	return predicate.Comment(sql.FieldNEQ(FieldStatus, v))
+}
+
+// StatusIn applies the In predicate on the "status" field.
+func StatusIn(vs ...Status) predicate.Comment {
+	return predicate.Comment(sql.FieldIn(FieldStatus, vs...))
+}
+
+// StatusNotIn applies the NotIn predicate on the "status" field.
+func StatusNotIn(vs ...Status) predicate.Comment {
+	return predicate.Comment(sql.FieldNotIn(FieldStatus, vs...))
+}
+
+// LanguageTypeEQ applies the EQ predicate on the "language_type" field.
+func LanguageTypeEQ(v string) predicate.Comment {
+	return predicate.Comment(sql.FieldEQ(FieldLanguageType, v))
+}
+
+// LanguageTypeNEQ applies the NEQ predicate on the "language_type" field.
+func LanguageTypeNEQ(v string) predicate.Comment {
+	return predicate.Comment(sql.FieldNEQ(FieldLanguageType, v))
+}
+
+// LanguageTypeIn applies the In predicate on the "language_type" field.
+func LanguageTypeIn(vs ...string) predicate.Comment {
+	return predicate.Comment(sql.FieldIn(FieldLanguageType, vs...))
+}
+
+// LanguageTypeNotIn applies the NotIn predicate on the "language_type" field.
+func LanguageTypeNotIn(vs ...string) predicate.Comment {
+	return predicate.Comment(sql.FieldNotIn(FieldLanguageType, vs...))
+}
+
+// LanguageTypeGT applies the GT predicate on the "language_type" field.
+func LanguageTypeGT(v string) predicate.Comment {
+	return predicate.Comment(sql.FieldGT(FieldLanguageType, v))
+}
+
+// LanguageTypeGTE applies the GTE predicate on the "language_type" field.
+func LanguageTypeGTE(v string) predicate.Comment {
+	return predicate.Comment(sql.FieldGTE(FieldLanguageType, v))
+}
+
+// LanguageTypeLT applies the LT predicate on the "language_type" field.
+func LanguageTypeLT(v string) predicate.Comment {
+	return predicate.Comment(sql.FieldLT(FieldLanguageType, v))
+}
+
+// LanguageTypeLTE applies the LTE predicate on the "language_type" field.
+func LanguageTypeLTE(v string) predicate.Comment {
+	return predicate.Comment(sql.FieldLTE(FieldLanguageType, v))
+}
+
+// LanguageTypeContains applies the Contains predicate on the "language_type" field.
+func LanguageTypeContains(v string) predicate.Comment {
+	return predicate.Comment(sql.FieldContains(FieldLanguageType, v))
+}
+
+// LanguageTypeHasPrefix applies the HasPrefix predicate on the "language_type" field.
+func LanguageTypeHasPrefix(v string) predicate.Comment {
+	return predicate.Comment(sql.FieldHasPrefix(FieldLanguageType, v))
+}
+
+// LanguageTypeHasSuffix applies the HasSuffix predicate on the "language_type" field.
+func LanguageTypeHasSuffix(v string) predicate.Comment {
+	return predicate.Comment(sql.FieldHasSuffix(FieldLanguageType, v))
+}
+
+// LanguageTypeEqualFold applies the EqualFold predicate on the "language_type" field.
+func LanguageTypeEqualFold(v string) predicate.Comment {
+	return predicate.Comment(sql.FieldEqualFold(FieldLanguageType, v))
+}
+
+// LanguageTypeContainsFold applies the ContainsFold predicate on the "language_type" field.
+func LanguageTypeContainsFold(v string) predicate.Comment {
+	return predicate.Comment(sql.FieldContainsFold(FieldLanguageType, v))
+}
+
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
 func CreatedAtEQ(v time.Time) predicate.Comment {
 	return predicate.Comment(sql.FieldEQ(FieldCreatedAt, v))
@@ -391,6 +481,29 @@ func HasCommentLike() predicate.Comment {
 func HasCommentLikeWith(preds ...predicate.CommentLike) predicate.Comment {
 	return predicate.Comment(func(s *sql.Selector) {
 		step := newCommentLikeStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasCommentMention applies the HasEdge predicate on the "comment_mention" edge.
+func HasCommentMention() predicate.Comment {
+	return predicate.Comment(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, CommentMentionTable, CommentMentionColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasCommentMentionWith applies the HasEdge predicate on the "comment_mention" edge with a given conditions (other predicates).
+func HasCommentMentionWith(preds ...predicate.CommentMention) predicate.Comment {
+	return predicate.Comment(func(s *sql.Selector) {
+		step := newCommentMentionStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

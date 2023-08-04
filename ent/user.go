@@ -41,9 +41,11 @@ type UserEdges struct {
 	CommentLike []*CommentLike `json:"comment_like,omitempty"`
 	// Comments holds the value of the comments edge.
 	Comments []*Comment `json:"comments,omitempty"`
+	// CommentMention holds the value of the comment_mention edge.
+	CommentMention []*CommentMention `json:"comment_mention,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [4]bool
+	loadedTypes [5]bool
 }
 
 // BoardsOrErr returns the Boards value or an error if the edge
@@ -80,6 +82,15 @@ func (e UserEdges) CommentsOrErr() ([]*Comment, error) {
 		return e.Comments, nil
 	}
 	return nil, &NotLoadedError{edge: "comments"}
+}
+
+// CommentMentionOrErr returns the CommentMention value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) CommentMentionOrErr() ([]*CommentMention, error) {
+	if e.loadedTypes[4] {
+		return e.CommentMention, nil
+	}
+	return nil, &NotLoadedError{edge: "comment_mention"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -169,6 +180,11 @@ func (u *User) QueryCommentLike() *CommentLikeQuery {
 // QueryComments queries the "comments" edge of the User entity.
 func (u *User) QueryComments() *CommentQuery {
 	return NewUserClient(u.config).QueryComments(u)
+}
+
+// QueryCommentMention queries the "comment_mention" edge of the User entity.
+func (u *User) QueryCommentMention() *CommentMentionQuery {
+	return NewUserClient(u.config).QueryCommentMention(u)
 }
 
 // Update returns a builder for updating this User.

@@ -30,5 +30,6 @@ func (User) Edges() []ent.Edge {
 		edge.To("board_like", BoardLike.Type),
 		edge.To("comment_like", CommentLike.Type),
 		edge.To("comments", Comment.Type),
+		edge.To("comment_mention", CommentMention.Type),
 	}
 }

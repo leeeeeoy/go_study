@@ -20,14 +20,24 @@ type Board struct {
 	ID int `json:"id,omitempty"`
 	// Title holds the value of the "title" field.
 	Title string `json:"title,omitempty"`
-	// Content holds the value of the "content" field.
-	Content string `json:"content,omitempty"`
+	// Text holds the value of the "text" field.
+	Text string `json:"text,omitempty"`
 	// UserID holds the value of the "user_id" field.
 	UserID int `json:"user_id,omitempty"`
 	// LikeCount holds the value of the "like_count" field.
 	LikeCount int `json:"like_count,omitempty"`
 	// CommentCount holds the value of the "comment_count" field.
 	CommentCount int `json:"comment_count,omitempty"`
+	// ViewCount holds the value of the "view_count" field.
+	ViewCount int `json:"view_count,omitempty"`
+	// ReportCount holds the value of the "report_count" field.
+	ReportCount int `json:"report_count,omitempty"`
+	// Status holds the value of the "status" field.
+	Status board.Status `json:"status,omitempty"`
+	// LanguageType holds the value of the "language_type" field.
+	LanguageType string `json:"language_type,omitempty"`
+	// Attachments holds the value of the "attachments" field.
+	Attachments string `json:"attachments,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	// UpdatedAt holds the value of the "updated_at" field.
@@ -46,9 +56,11 @@ type BoardEdges struct {
 	Comments []*Comment `json:"comments,omitempty"`
 	// BoardLike holds the value of the board_like edge.
 	BoardLike []*BoardLike `json:"board_like,omitempty"`
+	// BoardHashtag holds the value of the board_hashtag edge.
+	BoardHashtag []*BoardHashtag `json:"board_hashtag,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [3]bool
+	loadedTypes [4]bool
 }
 
 // UserOrErr returns the User value or an error if the edge
@@ -82,14 +94,23 @@ func (e BoardEdges) BoardLikeOrErr() ([]*BoardLike, error) {
 	return nil, &NotLoadedError{edge: "board_like"}
 }
 
+// BoardHashtagOrErr returns the BoardHashtag value or an error if the edge
+// was not loaded in eager-loading.
+func (e BoardEdges) BoardHashtagOrErr() ([]*BoardHashtag, error) {
+	if e.loadedTypes[3] {
+		return e.BoardHashtag, nil
+	}
+	return nil, &NotLoadedError{edge: "board_hashtag"}
+}
+
 // scanValues returns the types for scanning values from sql.Rows.
 func (*Board) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case board.FieldID, board.FieldUserID, board.FieldLikeCount, board.FieldCommentCount:
+		case board.FieldID, board.FieldUserID, board.FieldLikeCount, board.FieldCommentCount, board.FieldViewCount, board.FieldReportCount:
 			values[i] = new(sql.NullInt64)
-		case board.FieldTitle, board.FieldContent:
+		case board.FieldTitle, board.FieldText, board.FieldStatus, board.FieldLanguageType, board.FieldAttachments:
 			values[i] = new(sql.NullString)
 		case board.FieldCreatedAt, board.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
@@ -120,11 +141,11 @@ func (b *Board) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				b.Title = value.String
 			}
-		case board.FieldContent:
+		case board.FieldText:
 			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field content", values[i])
+				return fmt.Errorf("unexpected type %T for field text", values[i])
 			} else if value.Valid {
-				b.Content = value.String
+				b.Text = value.String
 			}
 		case board.FieldUserID:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
@@ -143,6 +164,36 @@ func (b *Board) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field comment_count", values[i])
 			} else if value.Valid {
 				b.CommentCount = int(value.Int64)
+			}
+		case board.FieldViewCount:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field view_count", values[i])
+			} else if value.Valid {
+				b.ViewCount = int(value.Int64)
+			}
+		case board.FieldReportCount:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field report_count", values[i])
+			} else if value.Valid {
+				b.ReportCount = int(value.Int64)
+			}
+		case board.FieldStatus:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field status", values[i])
+			} else if value.Valid {
+				b.Status = board.Status(value.String)
+			}
+		case board.FieldLanguageType:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field language_type", values[i])
+			} else if value.Valid {
+				b.LanguageType = value.String
+			}
+		case board.FieldAttachments:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field attachments", values[i])
+			} else if value.Valid {
+				b.Attachments = value.String
 			}
 		case board.FieldCreatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -184,6 +235,11 @@ func (b *Board) QueryBoardLike() *BoardLikeQuery {
 	return NewBoardClient(b.config).QueryBoardLike(b)
 }
 
+// QueryBoardHashtag queries the "board_hashtag" edge of the Board entity.
+func (b *Board) QueryBoardHashtag() *BoardHashtagQuery {
+	return NewBoardClient(b.config).QueryBoardHashtag(b)
+}
+
 // Update returns a builder for updating this Board.
 // Note that you need to call Board.Unwrap() before calling this method if this Board
 // was returned from a transaction, and the transaction was committed or rolled back.
@@ -210,8 +266,8 @@ func (b *Board) String() string {
 	builder.WriteString("title=")
 	builder.WriteString(b.Title)
 	builder.WriteString(", ")
-	builder.WriteString("content=")
-	builder.WriteString(b.Content)
+	builder.WriteString("text=")
+	builder.WriteString(b.Text)
 	builder.WriteString(", ")
 	builder.WriteString("user_id=")
 	builder.WriteString(fmt.Sprintf("%v", b.UserID))
@@ -221,6 +277,21 @@ func (b *Board) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("comment_count=")
 	builder.WriteString(fmt.Sprintf("%v", b.CommentCount))
+	builder.WriteString(", ")
+	builder.WriteString("view_count=")
+	builder.WriteString(fmt.Sprintf("%v", b.ViewCount))
+	builder.WriteString(", ")
+	builder.WriteString("report_count=")
+	builder.WriteString(fmt.Sprintf("%v", b.ReportCount))
+	builder.WriteString(", ")
+	builder.WriteString("status=")
+	builder.WriteString(fmt.Sprintf("%v", b.Status))
+	builder.WriteString(", ")
+	builder.WriteString("language_type=")
+	builder.WriteString(b.LanguageType)
+	builder.WriteString(", ")
+	builder.WriteString("attachments=")
+	builder.WriteString(b.Attachments)
 	builder.WriteString(", ")
 	builder.WriteString("created_at=")
 	builder.WriteString(b.CreatedAt.Format(time.ANSIC))
