@@ -25,8 +25,12 @@ const (
 	FieldLikeCount = "like_count"
 	// FieldStatus holds the string denoting the status field in the database.
 	FieldStatus = "status"
+	// FieldReportCount holds the string denoting the report_count field in the database.
+	FieldReportCount = "report_count"
 	// FieldLanguageType holds the string denoting the language_type field in the database.
 	FieldLanguageType = "language_type"
+	// FieldAuthorHeart holds the string denoting the author_heart field in the database.
+	FieldAuthorHeart = "author_heart"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
 	FieldCreatedAt = "created_at"
 	// FieldUpdatedAt holds the string denoting the updated_at field in the database.
@@ -39,6 +43,8 @@ const (
 	EdgeCommentLike = "comment_like"
 	// EdgeCommentMention holds the string denoting the comment_mention edge name in mutations.
 	EdgeCommentMention = "comment_mention"
+	// EdgeCommentReport holds the string denoting the comment_report edge name in mutations.
+	EdgeCommentReport = "comment_report"
 	// Table holds the table name of the comment in the database.
 	Table = "comments"
 	// BoardTable is the table that holds the board relation/edge.
@@ -69,6 +75,13 @@ const (
 	CommentMentionInverseTable = "comment_mentions"
 	// CommentMentionColumn is the table column denoting the comment_mention relation/edge.
 	CommentMentionColumn = "comment_id"
+	// CommentReportTable is the table that holds the comment_report relation/edge.
+	CommentReportTable = "comment_reports"
+	// CommentReportInverseTable is the table name for the CommentReport entity.
+	// It exists in this package in order to avoid circular dependency with the "commentreport" package.
+	CommentReportInverseTable = "comment_reports"
+	// CommentReportColumn is the table column denoting the comment_report relation/edge.
+	CommentReportColumn = "comment_id"
 )
 
 // Columns holds all SQL columns for comment fields.
@@ -79,7 +92,9 @@ var Columns = []string{
 	FieldBoardID,
 	FieldLikeCount,
 	FieldStatus,
+	FieldReportCount,
 	FieldLanguageType,
+	FieldAuthorHeart,
 	FieldCreatedAt,
 	FieldUpdatedAt,
 }
@@ -95,6 +110,10 @@ func ValidColumn(column string) bool {
 }
 
 var (
+	// ReportCountValidator is a validator for the "report_count" field. It is called by the builders before save.
+	ReportCountValidator func(int) error
+	// DefaultAuthorHeart holds the default value on creation for the "author_heart" field.
+	DefaultAuthorHeart bool
 	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
 	DefaultCreatedAt func() time.Time
 	// DefaultUpdatedAt holds the default value on creation for the "updated_at" field.
@@ -159,9 +178,19 @@ func ByStatus(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldStatus, opts...).ToFunc()
 }
 
+// ByReportCount orders the results by the report_count field.
+func ByReportCount(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldReportCount, opts...).ToFunc()
+}
+
 // ByLanguageType orders the results by the language_type field.
 func ByLanguageType(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldLanguageType, opts...).ToFunc()
+}
+
+// ByAuthorHeart orders the results by the author_heart field.
+func ByAuthorHeart(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldAuthorHeart, opts...).ToFunc()
 }
 
 // ByCreatedAt orders the results by the created_at field.
@@ -215,6 +244,20 @@ func ByCommentMention(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newCommentMentionStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// ByCommentReportCount orders the results by comment_report count.
+func ByCommentReportCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newCommentReportStep(), opts...)
+	}
+}
+
+// ByCommentReport orders the results by comment_report terms.
+func ByCommentReport(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newCommentReportStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newBoardStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -241,5 +284,12 @@ func newCommentMentionStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(CommentMentionInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, CommentMentionTable, CommentMentionColumn),
+	)
+}
+func newCommentReportStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(CommentReportInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, CommentReportTable, CommentReportColumn),
 	)
 }

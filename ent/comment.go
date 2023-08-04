@@ -29,8 +29,12 @@ type Comment struct {
 	LikeCount int `json:"like_count,omitempty"`
 	// Status holds the value of the "status" field.
 	Status comment.Status `json:"status,omitempty"`
+	// ReportCount holds the value of the "report_count" field.
+	ReportCount int `json:"report_count,omitempty"`
 	// LanguageType holds the value of the "language_type" field.
 	LanguageType string `json:"language_type,omitempty"`
+	// AuthorHeart holds the value of the "author_heart" field.
+	AuthorHeart bool `json:"author_heart,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	// UpdatedAt holds the value of the "updated_at" field.
@@ -51,9 +55,11 @@ type CommentEdges struct {
 	CommentLike []*CommentLike `json:"comment_like,omitempty"`
 	// CommentMention holds the value of the comment_mention edge.
 	CommentMention []*CommentMention `json:"comment_mention,omitempty"`
+	// CommentReport holds the value of the comment_report edge.
+	CommentReport []*CommentReport `json:"comment_report,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [4]bool
+	loadedTypes [5]bool
 }
 
 // BoardOrErr returns the Board value or an error if the edge
@@ -100,12 +106,23 @@ func (e CommentEdges) CommentMentionOrErr() ([]*CommentMention, error) {
 	return nil, &NotLoadedError{edge: "comment_mention"}
 }
 
+// CommentReportOrErr returns the CommentReport value or an error if the edge
+// was not loaded in eager-loading.
+func (e CommentEdges) CommentReportOrErr() ([]*CommentReport, error) {
+	if e.loadedTypes[4] {
+		return e.CommentReport, nil
+	}
+	return nil, &NotLoadedError{edge: "comment_report"}
+}
+
 // scanValues returns the types for scanning values from sql.Rows.
 func (*Comment) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case comment.FieldID, comment.FieldUserID, comment.FieldBoardID, comment.FieldLikeCount:
+		case comment.FieldAuthorHeart:
+			values[i] = new(sql.NullBool)
+		case comment.FieldID, comment.FieldUserID, comment.FieldBoardID, comment.FieldLikeCount, comment.FieldReportCount:
 			values[i] = new(sql.NullInt64)
 		case comment.FieldText, comment.FieldStatus, comment.FieldLanguageType:
 			values[i] = new(sql.NullString)
@@ -162,11 +179,23 @@ func (c *Comment) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				c.Status = comment.Status(value.String)
 			}
+		case comment.FieldReportCount:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field report_count", values[i])
+			} else if value.Valid {
+				c.ReportCount = int(value.Int64)
+			}
 		case comment.FieldLanguageType:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field language_type", values[i])
 			} else if value.Valid {
 				c.LanguageType = value.String
+			}
+		case comment.FieldAuthorHeart:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field author_heart", values[i])
+			} else if value.Valid {
+				c.AuthorHeart = value.Bool
 			}
 		case comment.FieldCreatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -213,6 +242,11 @@ func (c *Comment) QueryCommentMention() *CommentMentionQuery {
 	return NewCommentClient(c.config).QueryCommentMention(c)
 }
 
+// QueryCommentReport queries the "comment_report" edge of the Comment entity.
+func (c *Comment) QueryCommentReport() *CommentReportQuery {
+	return NewCommentClient(c.config).QueryCommentReport(c)
+}
+
 // Update returns a builder for updating this Comment.
 // Note that you need to call Comment.Unwrap() before calling this method if this Comment
 // was returned from a transaction, and the transaction was committed or rolled back.
@@ -251,8 +285,14 @@ func (c *Comment) String() string {
 	builder.WriteString("status=")
 	builder.WriteString(fmt.Sprintf("%v", c.Status))
 	builder.WriteString(", ")
+	builder.WriteString("report_count=")
+	builder.WriteString(fmt.Sprintf("%v", c.ReportCount))
+	builder.WriteString(", ")
 	builder.WriteString("language_type=")
 	builder.WriteString(c.LanguageType)
+	builder.WriteString(", ")
+	builder.WriteString("author_heart=")
+	builder.WriteString(fmt.Sprintf("%v", c.AuthorHeart))
 	builder.WriteString(", ")
 	builder.WriteString("created_at=")
 	builder.WriteString(c.CreatedAt.Format(time.ANSIC))

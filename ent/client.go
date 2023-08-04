@@ -17,10 +17,13 @@ import (
 	"github.com/leeeeeoy/go_study/ent/board"
 	"github.com/leeeeeoy/go_study/ent/boardhashtag"
 	"github.com/leeeeeoy/go_study/ent/boardlike"
+	"github.com/leeeeeoy/go_study/ent/boardreport"
 	"github.com/leeeeeoy/go_study/ent/comment"
 	"github.com/leeeeeoy/go_study/ent/commentlike"
 	"github.com/leeeeeoy/go_study/ent/commentmention"
+	"github.com/leeeeeoy/go_study/ent/commentreport"
 	"github.com/leeeeeoy/go_study/ent/hashtag"
+	"github.com/leeeeeoy/go_study/ent/reporttype"
 	"github.com/leeeeeoy/go_study/ent/user"
 )
 
@@ -35,14 +38,20 @@ type Client struct {
 	BoardHashtag *BoardHashtagClient
 	// BoardLike is the client for interacting with the BoardLike builders.
 	BoardLike *BoardLikeClient
+	// BoardReport is the client for interacting with the BoardReport builders.
+	BoardReport *BoardReportClient
 	// Comment is the client for interacting with the Comment builders.
 	Comment *CommentClient
 	// CommentLike is the client for interacting with the CommentLike builders.
 	CommentLike *CommentLikeClient
 	// CommentMention is the client for interacting with the CommentMention builders.
 	CommentMention *CommentMentionClient
+	// CommentReport is the client for interacting with the CommentReport builders.
+	CommentReport *CommentReportClient
 	// Hashtag is the client for interacting with the Hashtag builders.
 	Hashtag *HashtagClient
+	// ReportType is the client for interacting with the ReportType builders.
+	ReportType *ReportTypeClient
 	// User is the client for interacting with the User builders.
 	User *UserClient
 }
@@ -61,10 +70,13 @@ func (c *Client) init() {
 	c.Board = NewBoardClient(c.config)
 	c.BoardHashtag = NewBoardHashtagClient(c.config)
 	c.BoardLike = NewBoardLikeClient(c.config)
+	c.BoardReport = NewBoardReportClient(c.config)
 	c.Comment = NewCommentClient(c.config)
 	c.CommentLike = NewCommentLikeClient(c.config)
 	c.CommentMention = NewCommentMentionClient(c.config)
+	c.CommentReport = NewCommentReportClient(c.config)
 	c.Hashtag = NewHashtagClient(c.config)
+	c.ReportType = NewReportTypeClient(c.config)
 	c.User = NewUserClient(c.config)
 }
 
@@ -151,10 +163,13 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		Board:          NewBoardClient(cfg),
 		BoardHashtag:   NewBoardHashtagClient(cfg),
 		BoardLike:      NewBoardLikeClient(cfg),
+		BoardReport:    NewBoardReportClient(cfg),
 		Comment:        NewCommentClient(cfg),
 		CommentLike:    NewCommentLikeClient(cfg),
 		CommentMention: NewCommentMentionClient(cfg),
+		CommentReport:  NewCommentReportClient(cfg),
 		Hashtag:        NewHashtagClient(cfg),
+		ReportType:     NewReportTypeClient(cfg),
 		User:           NewUserClient(cfg),
 	}, nil
 }
@@ -178,10 +193,13 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		Board:          NewBoardClient(cfg),
 		BoardHashtag:   NewBoardHashtagClient(cfg),
 		BoardLike:      NewBoardLikeClient(cfg),
+		BoardReport:    NewBoardReportClient(cfg),
 		Comment:        NewCommentClient(cfg),
 		CommentLike:    NewCommentLikeClient(cfg),
 		CommentMention: NewCommentMentionClient(cfg),
+		CommentReport:  NewCommentReportClient(cfg),
 		Hashtag:        NewHashtagClient(cfg),
+		ReportType:     NewReportTypeClient(cfg),
 		User:           NewUserClient(cfg),
 	}, nil
 }
@@ -212,8 +230,8 @@ func (c *Client) Close() error {
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
-		c.Board, c.BoardHashtag, c.BoardLike, c.Comment, c.CommentLike,
-		c.CommentMention, c.Hashtag, c.User,
+		c.Board, c.BoardHashtag, c.BoardLike, c.BoardReport, c.Comment, c.CommentLike,
+		c.CommentMention, c.CommentReport, c.Hashtag, c.ReportType, c.User,
 	} {
 		n.Use(hooks...)
 	}
@@ -223,8 +241,8 @@ func (c *Client) Use(hooks ...Hook) {
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
-		c.Board, c.BoardHashtag, c.BoardLike, c.Comment, c.CommentLike,
-		c.CommentMention, c.Hashtag, c.User,
+		c.Board, c.BoardHashtag, c.BoardLike, c.BoardReport, c.Comment, c.CommentLike,
+		c.CommentMention, c.CommentReport, c.Hashtag, c.ReportType, c.User,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -239,14 +257,20 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.BoardHashtag.mutate(ctx, m)
 	case *BoardLikeMutation:
 		return c.BoardLike.mutate(ctx, m)
+	case *BoardReportMutation:
+		return c.BoardReport.mutate(ctx, m)
 	case *CommentMutation:
 		return c.Comment.mutate(ctx, m)
 	case *CommentLikeMutation:
 		return c.CommentLike.mutate(ctx, m)
 	case *CommentMentionMutation:
 		return c.CommentMention.mutate(ctx, m)
+	case *CommentReportMutation:
+		return c.CommentReport.mutate(ctx, m)
 	case *HashtagMutation:
 		return c.Hashtag.mutate(ctx, m)
+	case *ReportTypeMutation:
+		return c.ReportType.mutate(ctx, m)
 	case *UserMutation:
 		return c.User.mutate(ctx, m)
 	default:
@@ -404,6 +428,22 @@ func (c *BoardClient) QueryBoardHashtag(b *Board) *BoardHashtagQuery {
 			sqlgraph.From(board.Table, board.FieldID, id),
 			sqlgraph.To(boardhashtag.Table, boardhashtag.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, board.BoardHashtagTable, board.BoardHashtagColumn),
+		)
+		fromV = sqlgraph.Neighbors(b.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryBoardReport queries the board_report edge of a Board.
+func (c *BoardClient) QueryBoardReport(b *Board) *BoardReportQuery {
+	query := (&BoardReportClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := b.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(board.Table, board.FieldID, id),
+			sqlgraph.To(boardreport.Table, boardreport.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, board.BoardReportTable, board.BoardReportColumn),
 		)
 		fromV = sqlgraph.Neighbors(b.driver.Dialect(), step)
 		return fromV, nil
@@ -736,6 +776,172 @@ func (c *BoardLikeClient) mutate(ctx context.Context, m *BoardLikeMutation) (Val
 	}
 }
 
+// BoardReportClient is a client for the BoardReport schema.
+type BoardReportClient struct {
+	config
+}
+
+// NewBoardReportClient returns a client for the BoardReport from the given config.
+func NewBoardReportClient(c config) *BoardReportClient {
+	return &BoardReportClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `boardreport.Hooks(f(g(h())))`.
+func (c *BoardReportClient) Use(hooks ...Hook) {
+	c.hooks.BoardReport = append(c.hooks.BoardReport, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `boardreport.Intercept(f(g(h())))`.
+func (c *BoardReportClient) Intercept(interceptors ...Interceptor) {
+	c.inters.BoardReport = append(c.inters.BoardReport, interceptors...)
+}
+
+// Create returns a builder for creating a BoardReport entity.
+func (c *BoardReportClient) Create() *BoardReportCreate {
+	mutation := newBoardReportMutation(c.config, OpCreate)
+	return &BoardReportCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of BoardReport entities.
+func (c *BoardReportClient) CreateBulk(builders ...*BoardReportCreate) *BoardReportCreateBulk {
+	return &BoardReportCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for BoardReport.
+func (c *BoardReportClient) Update() *BoardReportUpdate {
+	mutation := newBoardReportMutation(c.config, OpUpdate)
+	return &BoardReportUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *BoardReportClient) UpdateOne(br *BoardReport) *BoardReportUpdateOne {
+	mutation := newBoardReportMutation(c.config, OpUpdateOne, withBoardReport(br))
+	return &BoardReportUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *BoardReportClient) UpdateOneID(id int) *BoardReportUpdateOne {
+	mutation := newBoardReportMutation(c.config, OpUpdateOne, withBoardReportID(id))
+	return &BoardReportUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for BoardReport.
+func (c *BoardReportClient) Delete() *BoardReportDelete {
+	mutation := newBoardReportMutation(c.config, OpDelete)
+	return &BoardReportDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *BoardReportClient) DeleteOne(br *BoardReport) *BoardReportDeleteOne {
+	return c.DeleteOneID(br.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *BoardReportClient) DeleteOneID(id int) *BoardReportDeleteOne {
+	builder := c.Delete().Where(boardreport.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &BoardReportDeleteOne{builder}
+}
+
+// Query returns a query builder for BoardReport.
+func (c *BoardReportClient) Query() *BoardReportQuery {
+	return &BoardReportQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeBoardReport},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a BoardReport entity by its id.
+func (c *BoardReportClient) Get(ctx context.Context, id int) (*BoardReport, error) {
+	return c.Query().Where(boardreport.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *BoardReportClient) GetX(ctx context.Context, id int) *BoardReport {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryUser queries the user edge of a BoardReport.
+func (c *BoardReportClient) QueryUser(br *BoardReport) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := br.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(boardreport.Table, boardreport.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, boardreport.UserTable, boardreport.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(br.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryBoard queries the board edge of a BoardReport.
+func (c *BoardReportClient) QueryBoard(br *BoardReport) *BoardQuery {
+	query := (&BoardClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := br.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(boardreport.Table, boardreport.FieldID, id),
+			sqlgraph.To(board.Table, board.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, boardreport.BoardTable, boardreport.BoardColumn),
+		)
+		fromV = sqlgraph.Neighbors(br.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryReportType queries the report_type edge of a BoardReport.
+func (c *BoardReportClient) QueryReportType(br *BoardReport) *ReportTypeQuery {
+	query := (&ReportTypeClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := br.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(boardreport.Table, boardreport.FieldID, id),
+			sqlgraph.To(reporttype.Table, reporttype.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, true, boardreport.ReportTypeTable, boardreport.ReportTypeColumn),
+		)
+		fromV = sqlgraph.Neighbors(br.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *BoardReportClient) Hooks() []Hook {
+	return c.hooks.BoardReport
+}
+
+// Interceptors returns the client interceptors.
+func (c *BoardReportClient) Interceptors() []Interceptor {
+	return c.inters.BoardReport
+}
+
+func (c *BoardReportClient) mutate(ctx context.Context, m *BoardReportMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&BoardReportCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&BoardReportUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&BoardReportUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&BoardReportDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown BoardReport mutation op: %q", m.Op())
+	}
+}
+
 // CommentClient is a client for the Comment schema.
 type CommentClient struct {
 	config
@@ -886,6 +1092,22 @@ func (c *CommentClient) QueryCommentMention(co *Comment) *CommentMentionQuery {
 			sqlgraph.From(comment.Table, comment.FieldID, id),
 			sqlgraph.To(commentmention.Table, commentmention.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, comment.CommentMentionTable, comment.CommentMentionColumn),
+		)
+		fromV = sqlgraph.Neighbors(co.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryCommentReport queries the comment_report edge of a Comment.
+func (c *CommentClient) QueryCommentReport(co *Comment) *CommentReportQuery {
+	query := (&CommentReportClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := co.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(comment.Table, comment.FieldID, id),
+			sqlgraph.To(commentreport.Table, commentreport.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, comment.CommentReportTable, comment.CommentReportColumn),
 		)
 		fromV = sqlgraph.Neighbors(co.driver.Dialect(), step)
 		return fromV, nil
@@ -1218,6 +1440,172 @@ func (c *CommentMentionClient) mutate(ctx context.Context, m *CommentMentionMuta
 	}
 }
 
+// CommentReportClient is a client for the CommentReport schema.
+type CommentReportClient struct {
+	config
+}
+
+// NewCommentReportClient returns a client for the CommentReport from the given config.
+func NewCommentReportClient(c config) *CommentReportClient {
+	return &CommentReportClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `commentreport.Hooks(f(g(h())))`.
+func (c *CommentReportClient) Use(hooks ...Hook) {
+	c.hooks.CommentReport = append(c.hooks.CommentReport, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `commentreport.Intercept(f(g(h())))`.
+func (c *CommentReportClient) Intercept(interceptors ...Interceptor) {
+	c.inters.CommentReport = append(c.inters.CommentReport, interceptors...)
+}
+
+// Create returns a builder for creating a CommentReport entity.
+func (c *CommentReportClient) Create() *CommentReportCreate {
+	mutation := newCommentReportMutation(c.config, OpCreate)
+	return &CommentReportCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of CommentReport entities.
+func (c *CommentReportClient) CreateBulk(builders ...*CommentReportCreate) *CommentReportCreateBulk {
+	return &CommentReportCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for CommentReport.
+func (c *CommentReportClient) Update() *CommentReportUpdate {
+	mutation := newCommentReportMutation(c.config, OpUpdate)
+	return &CommentReportUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *CommentReportClient) UpdateOne(cr *CommentReport) *CommentReportUpdateOne {
+	mutation := newCommentReportMutation(c.config, OpUpdateOne, withCommentReport(cr))
+	return &CommentReportUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *CommentReportClient) UpdateOneID(id int) *CommentReportUpdateOne {
+	mutation := newCommentReportMutation(c.config, OpUpdateOne, withCommentReportID(id))
+	return &CommentReportUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for CommentReport.
+func (c *CommentReportClient) Delete() *CommentReportDelete {
+	mutation := newCommentReportMutation(c.config, OpDelete)
+	return &CommentReportDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *CommentReportClient) DeleteOne(cr *CommentReport) *CommentReportDeleteOne {
+	return c.DeleteOneID(cr.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *CommentReportClient) DeleteOneID(id int) *CommentReportDeleteOne {
+	builder := c.Delete().Where(commentreport.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &CommentReportDeleteOne{builder}
+}
+
+// Query returns a query builder for CommentReport.
+func (c *CommentReportClient) Query() *CommentReportQuery {
+	return &CommentReportQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeCommentReport},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a CommentReport entity by its id.
+func (c *CommentReportClient) Get(ctx context.Context, id int) (*CommentReport, error) {
+	return c.Query().Where(commentreport.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *CommentReportClient) GetX(ctx context.Context, id int) *CommentReport {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryUser queries the user edge of a CommentReport.
+func (c *CommentReportClient) QueryUser(cr *CommentReport) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := cr.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(commentreport.Table, commentreport.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, commentreport.UserTable, commentreport.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(cr.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryComment queries the comment edge of a CommentReport.
+func (c *CommentReportClient) QueryComment(cr *CommentReport) *CommentQuery {
+	query := (&CommentClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := cr.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(commentreport.Table, commentreport.FieldID, id),
+			sqlgraph.To(comment.Table, comment.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, commentreport.CommentTable, commentreport.CommentColumn),
+		)
+		fromV = sqlgraph.Neighbors(cr.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryReportType queries the report_type edge of a CommentReport.
+func (c *CommentReportClient) QueryReportType(cr *CommentReport) *ReportTypeQuery {
+	query := (&ReportTypeClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := cr.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(commentreport.Table, commentreport.FieldID, id),
+			sqlgraph.To(reporttype.Table, reporttype.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, true, commentreport.ReportTypeTable, commentreport.ReportTypeColumn),
+		)
+		fromV = sqlgraph.Neighbors(cr.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *CommentReportClient) Hooks() []Hook {
+	return c.hooks.CommentReport
+}
+
+// Interceptors returns the client interceptors.
+func (c *CommentReportClient) Interceptors() []Interceptor {
+	return c.inters.CommentReport
+}
+
+func (c *CommentReportClient) mutate(ctx context.Context, m *CommentReportMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&CommentReportCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&CommentReportUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&CommentReportUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&CommentReportDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown CommentReport mutation op: %q", m.Op())
+	}
+}
+
 // HashtagClient is a client for the Hashtag schema.
 type HashtagClient struct {
 	config
@@ -1349,6 +1737,156 @@ func (c *HashtagClient) mutate(ctx context.Context, m *HashtagMutation) (Value, 
 		return (&HashtagDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown Hashtag mutation op: %q", m.Op())
+	}
+}
+
+// ReportTypeClient is a client for the ReportType schema.
+type ReportTypeClient struct {
+	config
+}
+
+// NewReportTypeClient returns a client for the ReportType from the given config.
+func NewReportTypeClient(c config) *ReportTypeClient {
+	return &ReportTypeClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `reporttype.Hooks(f(g(h())))`.
+func (c *ReportTypeClient) Use(hooks ...Hook) {
+	c.hooks.ReportType = append(c.hooks.ReportType, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `reporttype.Intercept(f(g(h())))`.
+func (c *ReportTypeClient) Intercept(interceptors ...Interceptor) {
+	c.inters.ReportType = append(c.inters.ReportType, interceptors...)
+}
+
+// Create returns a builder for creating a ReportType entity.
+func (c *ReportTypeClient) Create() *ReportTypeCreate {
+	mutation := newReportTypeMutation(c.config, OpCreate)
+	return &ReportTypeCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of ReportType entities.
+func (c *ReportTypeClient) CreateBulk(builders ...*ReportTypeCreate) *ReportTypeCreateBulk {
+	return &ReportTypeCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for ReportType.
+func (c *ReportTypeClient) Update() *ReportTypeUpdate {
+	mutation := newReportTypeMutation(c.config, OpUpdate)
+	return &ReportTypeUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *ReportTypeClient) UpdateOne(rt *ReportType) *ReportTypeUpdateOne {
+	mutation := newReportTypeMutation(c.config, OpUpdateOne, withReportType(rt))
+	return &ReportTypeUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *ReportTypeClient) UpdateOneID(id int) *ReportTypeUpdateOne {
+	mutation := newReportTypeMutation(c.config, OpUpdateOne, withReportTypeID(id))
+	return &ReportTypeUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for ReportType.
+func (c *ReportTypeClient) Delete() *ReportTypeDelete {
+	mutation := newReportTypeMutation(c.config, OpDelete)
+	return &ReportTypeDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *ReportTypeClient) DeleteOne(rt *ReportType) *ReportTypeDeleteOne {
+	return c.DeleteOneID(rt.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *ReportTypeClient) DeleteOneID(id int) *ReportTypeDeleteOne {
+	builder := c.Delete().Where(reporttype.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &ReportTypeDeleteOne{builder}
+}
+
+// Query returns a query builder for ReportType.
+func (c *ReportTypeClient) Query() *ReportTypeQuery {
+	return &ReportTypeQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeReportType},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a ReportType entity by its id.
+func (c *ReportTypeClient) Get(ctx context.Context, id int) (*ReportType, error) {
+	return c.Query().Where(reporttype.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *ReportTypeClient) GetX(ctx context.Context, id int) *ReportType {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryCommentReport queries the comment_report edge of a ReportType.
+func (c *ReportTypeClient) QueryCommentReport(rt *ReportType) *CommentReportQuery {
+	query := (&CommentReportClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := rt.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(reporttype.Table, reporttype.FieldID, id),
+			sqlgraph.To(commentreport.Table, commentreport.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, false, reporttype.CommentReportTable, reporttype.CommentReportColumn),
+		)
+		fromV = sqlgraph.Neighbors(rt.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryBoardReport queries the board_report edge of a ReportType.
+func (c *ReportTypeClient) QueryBoardReport(rt *ReportType) *BoardReportQuery {
+	query := (&BoardReportClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := rt.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(reporttype.Table, reporttype.FieldID, id),
+			sqlgraph.To(boardreport.Table, boardreport.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, false, reporttype.BoardReportTable, reporttype.BoardReportColumn),
+		)
+		fromV = sqlgraph.Neighbors(rt.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *ReportTypeClient) Hooks() []Hook {
+	return c.hooks.ReportType
+}
+
+// Interceptors returns the client interceptors.
+func (c *ReportTypeClient) Interceptors() []Interceptor {
+	return c.inters.ReportType
+}
+
+func (c *ReportTypeClient) mutate(ctx context.Context, m *ReportTypeMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&ReportTypeCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&ReportTypeUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&ReportTypeUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&ReportTypeDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown ReportType mutation op: %q", m.Op())
 	}
 }
 
@@ -1525,6 +2063,38 @@ func (c *UserClient) QueryCommentMention(u *User) *CommentMentionQuery {
 	return query
 }
 
+// QueryBoardReport queries the board_report edge of a User.
+func (c *UserClient) QueryBoardReport(u *User) *BoardReportQuery {
+	query := (&BoardReportClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := u.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(boardreport.Table, boardreport.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.BoardReportTable, user.BoardReportColumn),
+		)
+		fromV = sqlgraph.Neighbors(u.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryCommentReport queries the comment_report edge of a User.
+func (c *UserClient) QueryCommentReport(u *User) *CommentReportQuery {
+	query := (&CommentReportClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := u.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(commentreport.Table, commentreport.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.CommentReportTable, user.CommentReportColumn),
+		)
+		fromV = sqlgraph.Neighbors(u.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *UserClient) Hooks() []Hook {
 	return c.hooks.User
@@ -1553,11 +2123,11 @@ func (c *UserClient) mutate(ctx context.Context, m *UserMutation) (Value, error)
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		Board, BoardHashtag, BoardLike, Comment, CommentLike, CommentMention, Hashtag,
-		User []ent.Hook
+		Board, BoardHashtag, BoardLike, BoardReport, Comment, CommentLike,
+		CommentMention, CommentReport, Hashtag, ReportType, User []ent.Hook
 	}
 	inters struct {
-		Board, BoardHashtag, BoardLike, Comment, CommentLike, CommentMention, Hashtag,
-		User []ent.Interceptor
+		Board, BoardHashtag, BoardLike, BoardReport, Comment, CommentLike,
+		CommentMention, CommentReport, Hashtag, ReportType, User []ent.Interceptor
 	}
 )

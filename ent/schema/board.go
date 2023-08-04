@@ -38,5 +38,6 @@ func (Board) Edges() []ent.Edge {
 		edge.To("comments", Comment.Type),
 		edge.To("board_like", BoardLike.Type),
 		edge.To("board_hashtag", BoardHashtag.Type),
+		edge.To("board_report", BoardReport.Type),
 	}
 }

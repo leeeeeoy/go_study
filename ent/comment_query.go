@@ -15,6 +15,7 @@ import (
 	"github.com/leeeeeoy/go_study/ent/comment"
 	"github.com/leeeeeoy/go_study/ent/commentlike"
 	"github.com/leeeeeoy/go_study/ent/commentmention"
+	"github.com/leeeeeoy/go_study/ent/commentreport"
 	"github.com/leeeeeoy/go_study/ent/predicate"
 	"github.com/leeeeeoy/go_study/ent/user"
 )
@@ -30,6 +31,7 @@ type CommentQuery struct {
 	withUser           *UserQuery
 	withCommentLike    *CommentLikeQuery
 	withCommentMention *CommentMentionQuery
+	withCommentReport  *CommentReportQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -147,6 +149,28 @@ func (cq *CommentQuery) QueryCommentMention() *CommentMentionQuery {
 			sqlgraph.From(comment.Table, comment.FieldID, selector),
 			sqlgraph.To(commentmention.Table, commentmention.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, comment.CommentMentionTable, comment.CommentMentionColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(cq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryCommentReport chains the current query on the "comment_report" edge.
+func (cq *CommentQuery) QueryCommentReport() *CommentReportQuery {
+	query := (&CommentReportClient{config: cq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := cq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := cq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(comment.Table, comment.FieldID, selector),
+			sqlgraph.To(commentreport.Table, commentreport.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, comment.CommentReportTable, comment.CommentReportColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(cq.driver.Dialect(), step)
 		return fromU, nil
@@ -350,6 +374,7 @@ func (cq *CommentQuery) Clone() *CommentQuery {
 		withUser:           cq.withUser.Clone(),
 		withCommentLike:    cq.withCommentLike.Clone(),
 		withCommentMention: cq.withCommentMention.Clone(),
+		withCommentReport:  cq.withCommentReport.Clone(),
 		// clone intermediate query.
 		sql:  cq.sql.Clone(),
 		path: cq.path,
@@ -397,6 +422,17 @@ func (cq *CommentQuery) WithCommentMention(opts ...func(*CommentMentionQuery)) *
 		opt(query)
 	}
 	cq.withCommentMention = query
+	return cq
+}
+
+// WithCommentReport tells the query-builder to eager-load the nodes that are connected to
+// the "comment_report" edge. The optional arguments are used to configure the query builder of the edge.
+func (cq *CommentQuery) WithCommentReport(opts ...func(*CommentReportQuery)) *CommentQuery {
+	query := (&CommentReportClient{config: cq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	cq.withCommentReport = query
 	return cq
 }
 
@@ -478,11 +514,12 @@ func (cq *CommentQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Comm
 	var (
 		nodes       = []*Comment{}
 		_spec       = cq.querySpec()
-		loadedTypes = [4]bool{
+		loadedTypes = [5]bool{
 			cq.withBoard != nil,
 			cq.withUser != nil,
 			cq.withCommentLike != nil,
 			cq.withCommentMention != nil,
+			cq.withCommentReport != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -526,6 +563,13 @@ func (cq *CommentQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Comm
 		if err := cq.loadCommentMention(ctx, query, nodes,
 			func(n *Comment) { n.Edges.CommentMention = []*CommentMention{} },
 			func(n *Comment, e *CommentMention) { n.Edges.CommentMention = append(n.Edges.CommentMention, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := cq.withCommentReport; query != nil {
+		if err := cq.loadCommentReport(ctx, query, nodes,
+			func(n *Comment) { n.Edges.CommentReport = []*CommentReport{} },
+			func(n *Comment, e *CommentReport) { n.Edges.CommentReport = append(n.Edges.CommentReport, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -635,6 +679,36 @@ func (cq *CommentQuery) loadCommentMention(ctx context.Context, query *CommentMe
 	}
 	query.Where(predicate.CommentMention(func(s *sql.Selector) {
 		s.Where(sql.InValues(s.C(comment.CommentMentionColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.CommentID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "comment_id" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (cq *CommentQuery) loadCommentReport(ctx context.Context, query *CommentReportQuery, nodes []*Comment, init func(*Comment), assign func(*Comment, *CommentReport)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int]*Comment)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(commentreport.FieldCommentID)
+	}
+	query.Where(predicate.CommentReport(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(comment.CommentReportColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {

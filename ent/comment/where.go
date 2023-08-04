@@ -75,9 +75,19 @@ func LikeCount(v int) predicate.Comment {
 	return predicate.Comment(sql.FieldEQ(FieldLikeCount, v))
 }
 
+// ReportCount applies equality check predicate on the "report_count" field. It's identical to ReportCountEQ.
+func ReportCount(v int) predicate.Comment {
+	return predicate.Comment(sql.FieldEQ(FieldReportCount, v))
+}
+
 // LanguageType applies equality check predicate on the "language_type" field. It's identical to LanguageTypeEQ.
 func LanguageType(v string) predicate.Comment {
 	return predicate.Comment(sql.FieldEQ(FieldLanguageType, v))
+}
+
+// AuthorHeart applies equality check predicate on the "author_heart" field. It's identical to AuthorHeartEQ.
+func AuthorHeart(v bool) predicate.Comment {
+	return predicate.Comment(sql.FieldEQ(FieldAuthorHeart, v))
 }
 
 // CreatedAt applies equality check predicate on the "created_at" field. It's identical to CreatedAtEQ.
@@ -275,6 +285,46 @@ func StatusNotIn(vs ...Status) predicate.Comment {
 	return predicate.Comment(sql.FieldNotIn(FieldStatus, vs...))
 }
 
+// ReportCountEQ applies the EQ predicate on the "report_count" field.
+func ReportCountEQ(v int) predicate.Comment {
+	return predicate.Comment(sql.FieldEQ(FieldReportCount, v))
+}
+
+// ReportCountNEQ applies the NEQ predicate on the "report_count" field.
+func ReportCountNEQ(v int) predicate.Comment {
+	return predicate.Comment(sql.FieldNEQ(FieldReportCount, v))
+}
+
+// ReportCountIn applies the In predicate on the "report_count" field.
+func ReportCountIn(vs ...int) predicate.Comment {
+	return predicate.Comment(sql.FieldIn(FieldReportCount, vs...))
+}
+
+// ReportCountNotIn applies the NotIn predicate on the "report_count" field.
+func ReportCountNotIn(vs ...int) predicate.Comment {
+	return predicate.Comment(sql.FieldNotIn(FieldReportCount, vs...))
+}
+
+// ReportCountGT applies the GT predicate on the "report_count" field.
+func ReportCountGT(v int) predicate.Comment {
+	return predicate.Comment(sql.FieldGT(FieldReportCount, v))
+}
+
+// ReportCountGTE applies the GTE predicate on the "report_count" field.
+func ReportCountGTE(v int) predicate.Comment {
+	return predicate.Comment(sql.FieldGTE(FieldReportCount, v))
+}
+
+// ReportCountLT applies the LT predicate on the "report_count" field.
+func ReportCountLT(v int) predicate.Comment {
+	return predicate.Comment(sql.FieldLT(FieldReportCount, v))
+}
+
+// ReportCountLTE applies the LTE predicate on the "report_count" field.
+func ReportCountLTE(v int) predicate.Comment {
+	return predicate.Comment(sql.FieldLTE(FieldReportCount, v))
+}
+
 // LanguageTypeEQ applies the EQ predicate on the "language_type" field.
 func LanguageTypeEQ(v string) predicate.Comment {
 	return predicate.Comment(sql.FieldEQ(FieldLanguageType, v))
@@ -338,6 +388,16 @@ func LanguageTypeEqualFold(v string) predicate.Comment {
 // LanguageTypeContainsFold applies the ContainsFold predicate on the "language_type" field.
 func LanguageTypeContainsFold(v string) predicate.Comment {
 	return predicate.Comment(sql.FieldContainsFold(FieldLanguageType, v))
+}
+
+// AuthorHeartEQ applies the EQ predicate on the "author_heart" field.
+func AuthorHeartEQ(v bool) predicate.Comment {
+	return predicate.Comment(sql.FieldEQ(FieldAuthorHeart, v))
+}
+
+// AuthorHeartNEQ applies the NEQ predicate on the "author_heart" field.
+func AuthorHeartNEQ(v bool) predicate.Comment {
+	return predicate.Comment(sql.FieldNEQ(FieldAuthorHeart, v))
 }
 
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
@@ -504,6 +564,29 @@ func HasCommentMention() predicate.Comment {
 func HasCommentMentionWith(preds ...predicate.CommentMention) predicate.Comment {
 	return predicate.Comment(func(s *sql.Selector) {
 		step := newCommentMentionStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasCommentReport applies the HasEdge predicate on the "comment_report" edge.
+func HasCommentReport() predicate.Comment {
+	return predicate.Comment(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, CommentReportTable, CommentReportColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasCommentReportWith applies the HasEdge predicate on the "comment_report" edge with a given conditions (other predicates).
+func HasCommentReportWith(preds ...predicate.CommentReport) predicate.Comment {
+	return predicate.Comment(func(s *sql.Selector) {
+		step := newCommentReportStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

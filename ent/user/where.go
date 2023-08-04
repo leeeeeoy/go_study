@@ -425,6 +425,52 @@ func HasCommentMentionWith(preds ...predicate.CommentMention) predicate.User {
 	})
 }
 
+// HasBoardReport applies the HasEdge predicate on the "board_report" edge.
+func HasBoardReport() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, BoardReportTable, BoardReportColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasBoardReportWith applies the HasEdge predicate on the "board_report" edge with a given conditions (other predicates).
+func HasBoardReportWith(preds ...predicate.BoardReport) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := newBoardReportStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasCommentReport applies the HasEdge predicate on the "comment_report" edge.
+func HasCommentReport() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, CommentReportTable, CommentReportColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasCommentReportWith applies the HasEdge predicate on the "comment_report" edge with a given conditions (other predicates).
+func HasCommentReportWith(preds ...predicate.CommentReport) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := newCommentReportStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.User) predicate.User {
 	return predicate.User(func(s *sql.Selector) {

@@ -43,9 +43,13 @@ type UserEdges struct {
 	Comments []*Comment `json:"comments,omitempty"`
 	// CommentMention holds the value of the comment_mention edge.
 	CommentMention []*CommentMention `json:"comment_mention,omitempty"`
+	// BoardReport holds the value of the board_report edge.
+	BoardReport []*BoardReport `json:"board_report,omitempty"`
+	// CommentReport holds the value of the comment_report edge.
+	CommentReport []*CommentReport `json:"comment_report,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [5]bool
+	loadedTypes [7]bool
 }
 
 // BoardsOrErr returns the Boards value or an error if the edge
@@ -91,6 +95,24 @@ func (e UserEdges) CommentMentionOrErr() ([]*CommentMention, error) {
 		return e.CommentMention, nil
 	}
 	return nil, &NotLoadedError{edge: "comment_mention"}
+}
+
+// BoardReportOrErr returns the BoardReport value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) BoardReportOrErr() ([]*BoardReport, error) {
+	if e.loadedTypes[5] {
+		return e.BoardReport, nil
+	}
+	return nil, &NotLoadedError{edge: "board_report"}
+}
+
+// CommentReportOrErr returns the CommentReport value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) CommentReportOrErr() ([]*CommentReport, error) {
+	if e.loadedTypes[6] {
+		return e.CommentReport, nil
+	}
+	return nil, &NotLoadedError{edge: "comment_report"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -185,6 +207,16 @@ func (u *User) QueryComments() *CommentQuery {
 // QueryCommentMention queries the "comment_mention" edge of the User entity.
 func (u *User) QueryCommentMention() *CommentMentionQuery {
 	return NewUserClient(u.config).QueryCommentMention(u)
+}
+
+// QueryBoardReport queries the "board_report" edge of the User entity.
+func (u *User) QueryBoardReport() *BoardReportQuery {
+	return NewUserClient(u.config).QueryBoardReport(u)
+}
+
+// QueryCommentReport queries the "comment_report" edge of the User entity.
+func (u *User) QueryCommentReport() *CommentReportQuery {
+	return NewUserClient(u.config).QueryCommentReport(u)
 }
 
 // Update returns a builder for updating this User.

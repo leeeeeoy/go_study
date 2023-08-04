@@ -32,6 +32,10 @@ const (
 	EdgeComments = "comments"
 	// EdgeCommentMention holds the string denoting the comment_mention edge name in mutations.
 	EdgeCommentMention = "comment_mention"
+	// EdgeBoardReport holds the string denoting the board_report edge name in mutations.
+	EdgeBoardReport = "board_report"
+	// EdgeCommentReport holds the string denoting the comment_report edge name in mutations.
+	EdgeCommentReport = "comment_report"
 	// Table holds the table name of the user in the database.
 	Table = "users"
 	// BoardsTable is the table that holds the boards relation/edge.
@@ -69,6 +73,20 @@ const (
 	CommentMentionInverseTable = "comment_mentions"
 	// CommentMentionColumn is the table column denoting the comment_mention relation/edge.
 	CommentMentionColumn = "user_id"
+	// BoardReportTable is the table that holds the board_report relation/edge.
+	BoardReportTable = "board_reports"
+	// BoardReportInverseTable is the table name for the BoardReport entity.
+	// It exists in this package in order to avoid circular dependency with the "boardreport" package.
+	BoardReportInverseTable = "board_reports"
+	// BoardReportColumn is the table column denoting the board_report relation/edge.
+	BoardReportColumn = "reporter_id"
+	// CommentReportTable is the table that holds the comment_report relation/edge.
+	CommentReportTable = "comment_reports"
+	// CommentReportInverseTable is the table name for the CommentReport entity.
+	// It exists in this package in order to avoid circular dependency with the "commentreport" package.
+	CommentReportInverseTable = "comment_reports"
+	// CommentReportColumn is the table column denoting the comment_report relation/edge.
+	CommentReportColumn = "reporter_id"
 )
 
 // Columns holds all SQL columns for user fields.
@@ -192,6 +210,34 @@ func ByCommentMention(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newCommentMentionStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// ByBoardReportCount orders the results by board_report count.
+func ByBoardReportCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newBoardReportStep(), opts...)
+	}
+}
+
+// ByBoardReport orders the results by board_report terms.
+func ByBoardReport(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newBoardReportStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByCommentReportCount orders the results by comment_report count.
+func ByCommentReportCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newCommentReportStep(), opts...)
+	}
+}
+
+// ByCommentReport orders the results by comment_report terms.
+func ByCommentReport(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newCommentReportStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newBoardsStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -225,5 +271,19 @@ func newCommentMentionStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(CommentMentionInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, CommentMentionTable, CommentMentionColumn),
+	)
+}
+func newBoardReportStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(BoardReportInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, BoardReportTable, BoardReportColumn),
+	)
+}
+func newCommentReportStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(CommentReportInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, CommentReportTable, CommentReportColumn),
 	)
 }

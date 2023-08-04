@@ -14,6 +14,7 @@ import (
 	"github.com/leeeeeoy/go_study/ent/board"
 	"github.com/leeeeeoy/go_study/ent/boardhashtag"
 	"github.com/leeeeeoy/go_study/ent/boardlike"
+	"github.com/leeeeeoy/go_study/ent/boardreport"
 	"github.com/leeeeeoy/go_study/ent/comment"
 	"github.com/leeeeeoy/go_study/ent/predicate"
 	"github.com/leeeeeoy/go_study/ent/user"
@@ -218,6 +219,21 @@ func (bu *BoardUpdate) AddBoardHashtag(b ...*BoardHashtag) *BoardUpdate {
 	return bu.AddBoardHashtagIDs(ids...)
 }
 
+// AddBoardReportIDs adds the "board_report" edge to the BoardReport entity by IDs.
+func (bu *BoardUpdate) AddBoardReportIDs(ids ...int) *BoardUpdate {
+	bu.mutation.AddBoardReportIDs(ids...)
+	return bu
+}
+
+// AddBoardReport adds the "board_report" edges to the BoardReport entity.
+func (bu *BoardUpdate) AddBoardReport(b ...*BoardReport) *BoardUpdate {
+	ids := make([]int, len(b))
+	for i := range b {
+		ids[i] = b[i].ID
+	}
+	return bu.AddBoardReportIDs(ids...)
+}
+
 // Mutation returns the BoardMutation object of the builder.
 func (bu *BoardUpdate) Mutation() *BoardMutation {
 	return bu.mutation
@@ -290,6 +306,27 @@ func (bu *BoardUpdate) RemoveBoardHashtag(b ...*BoardHashtag) *BoardUpdate {
 		ids[i] = b[i].ID
 	}
 	return bu.RemoveBoardHashtagIDs(ids...)
+}
+
+// ClearBoardReport clears all "board_report" edges to the BoardReport entity.
+func (bu *BoardUpdate) ClearBoardReport() *BoardUpdate {
+	bu.mutation.ClearBoardReport()
+	return bu
+}
+
+// RemoveBoardReportIDs removes the "board_report" edge to BoardReport entities by IDs.
+func (bu *BoardUpdate) RemoveBoardReportIDs(ids ...int) *BoardUpdate {
+	bu.mutation.RemoveBoardReportIDs(ids...)
+	return bu
+}
+
+// RemoveBoardReport removes "board_report" edges to BoardReport entities.
+func (bu *BoardUpdate) RemoveBoardReport(b ...*BoardReport) *BoardUpdate {
+	ids := make([]int, len(b))
+	for i := range b {
+		ids[i] = b[i].ID
+	}
+	return bu.RemoveBoardReportIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -582,6 +619,51 @@ func (bu *BoardUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if bu.mutation.BoardReportCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   board.BoardReportTable,
+			Columns: []string{board.BoardReportColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(boardreport.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := bu.mutation.RemovedBoardReportIDs(); len(nodes) > 0 && !bu.mutation.BoardReportCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   board.BoardReportTable,
+			Columns: []string{board.BoardReportColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(boardreport.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := bu.mutation.BoardReportIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   board.BoardReportTable,
+			Columns: []string{board.BoardReportColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(boardreport.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, bu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{board.Label}
@@ -788,6 +870,21 @@ func (buo *BoardUpdateOne) AddBoardHashtag(b ...*BoardHashtag) *BoardUpdateOne {
 	return buo.AddBoardHashtagIDs(ids...)
 }
 
+// AddBoardReportIDs adds the "board_report" edge to the BoardReport entity by IDs.
+func (buo *BoardUpdateOne) AddBoardReportIDs(ids ...int) *BoardUpdateOne {
+	buo.mutation.AddBoardReportIDs(ids...)
+	return buo
+}
+
+// AddBoardReport adds the "board_report" edges to the BoardReport entity.
+func (buo *BoardUpdateOne) AddBoardReport(b ...*BoardReport) *BoardUpdateOne {
+	ids := make([]int, len(b))
+	for i := range b {
+		ids[i] = b[i].ID
+	}
+	return buo.AddBoardReportIDs(ids...)
+}
+
 // Mutation returns the BoardMutation object of the builder.
 func (buo *BoardUpdateOne) Mutation() *BoardMutation {
 	return buo.mutation
@@ -860,6 +957,27 @@ func (buo *BoardUpdateOne) RemoveBoardHashtag(b ...*BoardHashtag) *BoardUpdateOn
 		ids[i] = b[i].ID
 	}
 	return buo.RemoveBoardHashtagIDs(ids...)
+}
+
+// ClearBoardReport clears all "board_report" edges to the BoardReport entity.
+func (buo *BoardUpdateOne) ClearBoardReport() *BoardUpdateOne {
+	buo.mutation.ClearBoardReport()
+	return buo
+}
+
+// RemoveBoardReportIDs removes the "board_report" edge to BoardReport entities by IDs.
+func (buo *BoardUpdateOne) RemoveBoardReportIDs(ids ...int) *BoardUpdateOne {
+	buo.mutation.RemoveBoardReportIDs(ids...)
+	return buo
+}
+
+// RemoveBoardReport removes "board_report" edges to BoardReport entities.
+func (buo *BoardUpdateOne) RemoveBoardReport(b ...*BoardReport) *BoardUpdateOne {
+	ids := make([]int, len(b))
+	for i := range b {
+		ids[i] = b[i].ID
+	}
+	return buo.RemoveBoardReportIDs(ids...)
 }
 
 // Where appends a list predicates to the BoardUpdate builder.
@@ -1175,6 +1293,51 @@ func (buo *BoardUpdateOne) sqlSave(ctx context.Context) (_node *Board, err error
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(boardhashtag.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if buo.mutation.BoardReportCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   board.BoardReportTable,
+			Columns: []string{board.BoardReportColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(boardreport.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := buo.mutation.RemovedBoardReportIDs(); len(nodes) > 0 && !buo.mutation.BoardReportCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   board.BoardReportTable,
+			Columns: []string{board.BoardReportColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(boardreport.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := buo.mutation.BoardReportIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   board.BoardReportTable,
+			Columns: []string{board.BoardReportColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(boardreport.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

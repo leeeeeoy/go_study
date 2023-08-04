@@ -15,6 +15,7 @@ import (
 	"github.com/leeeeeoy/go_study/ent/comment"
 	"github.com/leeeeeoy/go_study/ent/commentlike"
 	"github.com/leeeeeoy/go_study/ent/commentmention"
+	"github.com/leeeeeoy/go_study/ent/commentreport"
 	"github.com/leeeeeoy/go_study/ent/predicate"
 	"github.com/leeeeeoy/go_study/ent/user"
 )
@@ -97,9 +98,36 @@ func (cu *CommentUpdate) SetStatus(c comment.Status) *CommentUpdate {
 	return cu
 }
 
+// SetReportCount sets the "report_count" field.
+func (cu *CommentUpdate) SetReportCount(i int) *CommentUpdate {
+	cu.mutation.ResetReportCount()
+	cu.mutation.SetReportCount(i)
+	return cu
+}
+
+// AddReportCount adds i to the "report_count" field.
+func (cu *CommentUpdate) AddReportCount(i int) *CommentUpdate {
+	cu.mutation.AddReportCount(i)
+	return cu
+}
+
 // SetLanguageType sets the "language_type" field.
 func (cu *CommentUpdate) SetLanguageType(s string) *CommentUpdate {
 	cu.mutation.SetLanguageType(s)
+	return cu
+}
+
+// SetAuthorHeart sets the "author_heart" field.
+func (cu *CommentUpdate) SetAuthorHeart(b bool) *CommentUpdate {
+	cu.mutation.SetAuthorHeart(b)
+	return cu
+}
+
+// SetNillableAuthorHeart sets the "author_heart" field if the given value is not nil.
+func (cu *CommentUpdate) SetNillableAuthorHeart(b *bool) *CommentUpdate {
+	if b != nil {
+		cu.SetAuthorHeart(*b)
+	}
 	return cu
 }
 
@@ -163,6 +191,21 @@ func (cu *CommentUpdate) AddCommentMention(c ...*CommentMention) *CommentUpdate 
 	return cu.AddCommentMentionIDs(ids...)
 }
 
+// AddCommentReportIDs adds the "comment_report" edge to the CommentReport entity by IDs.
+func (cu *CommentUpdate) AddCommentReportIDs(ids ...int) *CommentUpdate {
+	cu.mutation.AddCommentReportIDs(ids...)
+	return cu
+}
+
+// AddCommentReport adds the "comment_report" edges to the CommentReport entity.
+func (cu *CommentUpdate) AddCommentReport(c ...*CommentReport) *CommentUpdate {
+	ids := make([]int, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
+	}
+	return cu.AddCommentReportIDs(ids...)
+}
+
 // Mutation returns the CommentMutation object of the builder.
 func (cu *CommentUpdate) Mutation() *CommentMutation {
 	return cu.mutation
@@ -222,6 +265,27 @@ func (cu *CommentUpdate) RemoveCommentMention(c ...*CommentMention) *CommentUpda
 	return cu.RemoveCommentMentionIDs(ids...)
 }
 
+// ClearCommentReport clears all "comment_report" edges to the CommentReport entity.
+func (cu *CommentUpdate) ClearCommentReport() *CommentUpdate {
+	cu.mutation.ClearCommentReport()
+	return cu
+}
+
+// RemoveCommentReportIDs removes the "comment_report" edge to CommentReport entities by IDs.
+func (cu *CommentUpdate) RemoveCommentReportIDs(ids ...int) *CommentUpdate {
+	cu.mutation.RemoveCommentReportIDs(ids...)
+	return cu
+}
+
+// RemoveCommentReport removes "comment_report" edges to CommentReport entities.
+func (cu *CommentUpdate) RemoveCommentReport(c ...*CommentReport) *CommentUpdate {
+	ids := make([]int, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
+	}
+	return cu.RemoveCommentReportIDs(ids...)
+}
+
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (cu *CommentUpdate) Save(ctx context.Context) (int, error) {
 	cu.defaults()
@@ -265,6 +329,11 @@ func (cu *CommentUpdate) check() error {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "Comment.status": %w`, err)}
 		}
 	}
+	if v, ok := cu.mutation.ReportCount(); ok {
+		if err := comment.ReportCountValidator(v); err != nil {
+			return &ValidationError{Name: "report_count", err: fmt.Errorf(`ent: validator failed for field "Comment.report_count": %w`, err)}
+		}
+	}
 	return nil
 }
 
@@ -292,8 +361,17 @@ func (cu *CommentUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := cu.mutation.Status(); ok {
 		_spec.SetField(comment.FieldStatus, field.TypeEnum, value)
 	}
+	if value, ok := cu.mutation.ReportCount(); ok {
+		_spec.SetField(comment.FieldReportCount, field.TypeInt, value)
+	}
+	if value, ok := cu.mutation.AddedReportCount(); ok {
+		_spec.AddField(comment.FieldReportCount, field.TypeInt, value)
+	}
 	if value, ok := cu.mutation.LanguageType(); ok {
 		_spec.SetField(comment.FieldLanguageType, field.TypeString, value)
+	}
+	if value, ok := cu.mutation.AuthorHeart(); ok {
+		_spec.SetField(comment.FieldAuthorHeart, field.TypeBool, value)
 	}
 	if value, ok := cu.mutation.CreatedAt(); ok {
 		_spec.SetField(comment.FieldCreatedAt, field.TypeTime, value)
@@ -449,6 +527,51 @@ func (cu *CommentUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if cu.mutation.CommentReportCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   comment.CommentReportTable,
+			Columns: []string{comment.CommentReportColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(commentreport.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := cu.mutation.RemovedCommentReportIDs(); len(nodes) > 0 && !cu.mutation.CommentReportCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   comment.CommentReportTable,
+			Columns: []string{comment.CommentReportColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(commentreport.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := cu.mutation.CommentReportIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   comment.CommentReportTable,
+			Columns: []string{comment.CommentReportColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(commentreport.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, cu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{comment.Label}
@@ -534,9 +657,36 @@ func (cuo *CommentUpdateOne) SetStatus(c comment.Status) *CommentUpdateOne {
 	return cuo
 }
 
+// SetReportCount sets the "report_count" field.
+func (cuo *CommentUpdateOne) SetReportCount(i int) *CommentUpdateOne {
+	cuo.mutation.ResetReportCount()
+	cuo.mutation.SetReportCount(i)
+	return cuo
+}
+
+// AddReportCount adds i to the "report_count" field.
+func (cuo *CommentUpdateOne) AddReportCount(i int) *CommentUpdateOne {
+	cuo.mutation.AddReportCount(i)
+	return cuo
+}
+
 // SetLanguageType sets the "language_type" field.
 func (cuo *CommentUpdateOne) SetLanguageType(s string) *CommentUpdateOne {
 	cuo.mutation.SetLanguageType(s)
+	return cuo
+}
+
+// SetAuthorHeart sets the "author_heart" field.
+func (cuo *CommentUpdateOne) SetAuthorHeart(b bool) *CommentUpdateOne {
+	cuo.mutation.SetAuthorHeart(b)
+	return cuo
+}
+
+// SetNillableAuthorHeart sets the "author_heart" field if the given value is not nil.
+func (cuo *CommentUpdateOne) SetNillableAuthorHeart(b *bool) *CommentUpdateOne {
+	if b != nil {
+		cuo.SetAuthorHeart(*b)
+	}
 	return cuo
 }
 
@@ -600,6 +750,21 @@ func (cuo *CommentUpdateOne) AddCommentMention(c ...*CommentMention) *CommentUpd
 	return cuo.AddCommentMentionIDs(ids...)
 }
 
+// AddCommentReportIDs adds the "comment_report" edge to the CommentReport entity by IDs.
+func (cuo *CommentUpdateOne) AddCommentReportIDs(ids ...int) *CommentUpdateOne {
+	cuo.mutation.AddCommentReportIDs(ids...)
+	return cuo
+}
+
+// AddCommentReport adds the "comment_report" edges to the CommentReport entity.
+func (cuo *CommentUpdateOne) AddCommentReport(c ...*CommentReport) *CommentUpdateOne {
+	ids := make([]int, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
+	}
+	return cuo.AddCommentReportIDs(ids...)
+}
+
 // Mutation returns the CommentMutation object of the builder.
 func (cuo *CommentUpdateOne) Mutation() *CommentMutation {
 	return cuo.mutation
@@ -659,6 +824,27 @@ func (cuo *CommentUpdateOne) RemoveCommentMention(c ...*CommentMention) *Comment
 	return cuo.RemoveCommentMentionIDs(ids...)
 }
 
+// ClearCommentReport clears all "comment_report" edges to the CommentReport entity.
+func (cuo *CommentUpdateOne) ClearCommentReport() *CommentUpdateOne {
+	cuo.mutation.ClearCommentReport()
+	return cuo
+}
+
+// RemoveCommentReportIDs removes the "comment_report" edge to CommentReport entities by IDs.
+func (cuo *CommentUpdateOne) RemoveCommentReportIDs(ids ...int) *CommentUpdateOne {
+	cuo.mutation.RemoveCommentReportIDs(ids...)
+	return cuo
+}
+
+// RemoveCommentReport removes "comment_report" edges to CommentReport entities.
+func (cuo *CommentUpdateOne) RemoveCommentReport(c ...*CommentReport) *CommentUpdateOne {
+	ids := make([]int, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
+	}
+	return cuo.RemoveCommentReportIDs(ids...)
+}
+
 // Where appends a list predicates to the CommentUpdate builder.
 func (cuo *CommentUpdateOne) Where(ps ...predicate.Comment) *CommentUpdateOne {
 	cuo.mutation.Where(ps...)
@@ -715,6 +901,11 @@ func (cuo *CommentUpdateOne) check() error {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "Comment.status": %w`, err)}
 		}
 	}
+	if v, ok := cuo.mutation.ReportCount(); ok {
+		if err := comment.ReportCountValidator(v); err != nil {
+			return &ValidationError{Name: "report_count", err: fmt.Errorf(`ent: validator failed for field "Comment.report_count": %w`, err)}
+		}
+	}
 	return nil
 }
 
@@ -759,8 +950,17 @@ func (cuo *CommentUpdateOne) sqlSave(ctx context.Context) (_node *Comment, err e
 	if value, ok := cuo.mutation.Status(); ok {
 		_spec.SetField(comment.FieldStatus, field.TypeEnum, value)
 	}
+	if value, ok := cuo.mutation.ReportCount(); ok {
+		_spec.SetField(comment.FieldReportCount, field.TypeInt, value)
+	}
+	if value, ok := cuo.mutation.AddedReportCount(); ok {
+		_spec.AddField(comment.FieldReportCount, field.TypeInt, value)
+	}
 	if value, ok := cuo.mutation.LanguageType(); ok {
 		_spec.SetField(comment.FieldLanguageType, field.TypeString, value)
+	}
+	if value, ok := cuo.mutation.AuthorHeart(); ok {
+		_spec.SetField(comment.FieldAuthorHeart, field.TypeBool, value)
 	}
 	if value, ok := cuo.mutation.CreatedAt(); ok {
 		_spec.SetField(comment.FieldCreatedAt, field.TypeTime, value)
@@ -909,6 +1109,51 @@ func (cuo *CommentUpdateOne) sqlSave(ctx context.Context) (_node *Comment, err e
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(commentmention.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if cuo.mutation.CommentReportCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   comment.CommentReportTable,
+			Columns: []string{comment.CommentReportColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(commentreport.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := cuo.mutation.RemovedCommentReportIDs(); len(nodes) > 0 && !cuo.mutation.CommentReportCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   comment.CommentReportTable,
+			Columns: []string{comment.CommentReportColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(commentreport.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := cuo.mutation.CommentReportIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   comment.CommentReportTable,
+			Columns: []string{comment.CommentReportColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(commentreport.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

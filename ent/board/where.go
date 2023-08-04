@@ -762,6 +762,29 @@ func HasBoardHashtagWith(preds ...predicate.BoardHashtag) predicate.Board {
 	})
 }
 
+// HasBoardReport applies the HasEdge predicate on the "board_report" edge.
+func HasBoardReport() predicate.Board {
+	return predicate.Board(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, BoardReportTable, BoardReportColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasBoardReportWith applies the HasEdge predicate on the "board_report" edge with a given conditions (other predicates).
+func HasBoardReportWith(preds ...predicate.BoardReport) predicate.Board {
+	return predicate.Board(func(s *sql.Selector) {
+		step := newBoardReportStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.Board) predicate.Board {
 	return predicate.Board(func(s *sql.Selector) {

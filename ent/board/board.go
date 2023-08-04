@@ -47,6 +47,8 @@ const (
 	EdgeBoardLike = "board_like"
 	// EdgeBoardHashtag holds the string denoting the board_hashtag edge name in mutations.
 	EdgeBoardHashtag = "board_hashtag"
+	// EdgeBoardReport holds the string denoting the board_report edge name in mutations.
+	EdgeBoardReport = "board_report"
 	// Table holds the table name of the board in the database.
 	Table = "boards"
 	// UserTable is the table that holds the user relation/edge.
@@ -77,6 +79,13 @@ const (
 	BoardHashtagInverseTable = "board_hashtags"
 	// BoardHashtagColumn is the table column denoting the board_hashtag relation/edge.
 	BoardHashtagColumn = "board_id"
+	// BoardReportTable is the table that holds the board_report relation/edge.
+	BoardReportTable = "board_reports"
+	// BoardReportInverseTable is the table name for the BoardReport entity.
+	// It exists in this package in order to avoid circular dependency with the "boardreport" package.
+	BoardReportInverseTable = "board_reports"
+	// BoardReportColumn is the table column denoting the board_report relation/edge.
+	BoardReportColumn = "board_id"
 )
 
 // Columns holds all SQL columns for board fields.
@@ -262,6 +271,20 @@ func ByBoardHashtag(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newBoardHashtagStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// ByBoardReportCount orders the results by board_report count.
+func ByBoardReportCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newBoardReportStep(), opts...)
+	}
+}
+
+// ByBoardReport orders the results by board_report terms.
+func ByBoardReport(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newBoardReportStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newUserStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -288,5 +311,12 @@ func newBoardHashtagStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(BoardHashtagInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, BoardHashtagTable, BoardHashtagColumn),
+	)
+}
+func newBoardReportStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(BoardReportInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, BoardReportTable, BoardReportColumn),
 	)
 }

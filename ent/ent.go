@@ -15,10 +15,13 @@ import (
 	"github.com/leeeeeoy/go_study/ent/board"
 	"github.com/leeeeeoy/go_study/ent/boardhashtag"
 	"github.com/leeeeeoy/go_study/ent/boardlike"
+	"github.com/leeeeeoy/go_study/ent/boardreport"
 	"github.com/leeeeeoy/go_study/ent/comment"
 	"github.com/leeeeeoy/go_study/ent/commentlike"
 	"github.com/leeeeeoy/go_study/ent/commentmention"
+	"github.com/leeeeeoy/go_study/ent/commentreport"
 	"github.com/leeeeeoy/go_study/ent/hashtag"
+	"github.com/leeeeeoy/go_study/ent/reporttype"
 	"github.com/leeeeeoy/go_study/ent/user"
 )
 
@@ -83,10 +86,13 @@ func checkColumn(table, column string) error {
 			board.Table:          board.ValidColumn,
 			boardhashtag.Table:   boardhashtag.ValidColumn,
 			boardlike.Table:      boardlike.ValidColumn,
+			boardreport.Table:    boardreport.ValidColumn,
 			comment.Table:        comment.ValidColumn,
 			commentlike.Table:    commentlike.ValidColumn,
 			commentmention.Table: commentmention.ValidColumn,
+			commentreport.Table:  commentreport.ValidColumn,
 			hashtag.Table:        hashtag.ValidColumn,
+			reporttype.Table:     reporttype.ValidColumn,
 			user.Table:           user.ValidColumn,
 		})
 	})

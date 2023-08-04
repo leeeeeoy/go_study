@@ -31,5 +31,7 @@ func (User) Edges() []ent.Edge {
 		edge.To("comment_like", CommentLike.Type),
 		edge.To("comments", Comment.Type),
 		edge.To("comment_mention", CommentMention.Type),
+		edge.To("board_report", BoardReport.Type),
+		edge.To("comment_report", CommentReport.Type),
 	}
 }

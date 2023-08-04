@@ -45,6 +45,18 @@ func (f BoardLikeFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, e
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.BoardLikeMutation", m)
 }
 
+// The BoardReportFunc type is an adapter to allow the use of ordinary
+// function as BoardReport mutator.
+type BoardReportFunc func(context.Context, *ent.BoardReportMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f BoardReportFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.BoardReportMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.BoardReportMutation", m)
+}
+
 // The CommentFunc type is an adapter to allow the use of ordinary
 // function as Comment mutator.
 type CommentFunc func(context.Context, *ent.CommentMutation) (ent.Value, error)
@@ -81,6 +93,18 @@ func (f CommentMentionFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Val
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.CommentMentionMutation", m)
 }
 
+// The CommentReportFunc type is an adapter to allow the use of ordinary
+// function as CommentReport mutator.
+type CommentReportFunc func(context.Context, *ent.CommentReportMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f CommentReportFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.CommentReportMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.CommentReportMutation", m)
+}
+
 // The HashtagFunc type is an adapter to allow the use of ordinary
 // function as Hashtag mutator.
 type HashtagFunc func(context.Context, *ent.HashtagMutation) (ent.Value, error)
@@ -91,6 +115,18 @@ func (f HashtagFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, err
 		return f(ctx, mv)
 	}
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.HashtagMutation", m)
+}
+
+// The ReportTypeFunc type is an adapter to allow the use of ordinary
+// function as ReportType mutator.
+type ReportTypeFunc func(context.Context, *ent.ReportTypeMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f ReportTypeFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.ReportTypeMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ReportTypeMutation", m)
 }
 
 // The UserFunc type is an adapter to allow the use of ordinary

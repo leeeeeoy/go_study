@@ -13,9 +13,11 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/leeeeeoy/go_study/ent/board"
 	"github.com/leeeeeoy/go_study/ent/boardlike"
+	"github.com/leeeeeoy/go_study/ent/boardreport"
 	"github.com/leeeeeoy/go_study/ent/comment"
 	"github.com/leeeeeoy/go_study/ent/commentlike"
 	"github.com/leeeeeoy/go_study/ent/commentmention"
+	"github.com/leeeeeoy/go_study/ent/commentreport"
 	"github.com/leeeeeoy/go_study/ent/predicate"
 	"github.com/leeeeeoy/go_study/ent/user"
 )
@@ -140,6 +142,36 @@ func (uu *UserUpdate) AddCommentMention(c ...*CommentMention) *UserUpdate {
 	return uu.AddCommentMentionIDs(ids...)
 }
 
+// AddBoardReportIDs adds the "board_report" edge to the BoardReport entity by IDs.
+func (uu *UserUpdate) AddBoardReportIDs(ids ...int) *UserUpdate {
+	uu.mutation.AddBoardReportIDs(ids...)
+	return uu
+}
+
+// AddBoardReport adds the "board_report" edges to the BoardReport entity.
+func (uu *UserUpdate) AddBoardReport(b ...*BoardReport) *UserUpdate {
+	ids := make([]int, len(b))
+	for i := range b {
+		ids[i] = b[i].ID
+	}
+	return uu.AddBoardReportIDs(ids...)
+}
+
+// AddCommentReportIDs adds the "comment_report" edge to the CommentReport entity by IDs.
+func (uu *UserUpdate) AddCommentReportIDs(ids ...int) *UserUpdate {
+	uu.mutation.AddCommentReportIDs(ids...)
+	return uu
+}
+
+// AddCommentReport adds the "comment_report" edges to the CommentReport entity.
+func (uu *UserUpdate) AddCommentReport(c ...*CommentReport) *UserUpdate {
+	ids := make([]int, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
+	}
+	return uu.AddCommentReportIDs(ids...)
+}
+
 // Mutation returns the UserMutation object of the builder.
 func (uu *UserUpdate) Mutation() *UserMutation {
 	return uu.mutation
@@ -248,6 +280,48 @@ func (uu *UserUpdate) RemoveCommentMention(c ...*CommentMention) *UserUpdate {
 		ids[i] = c[i].ID
 	}
 	return uu.RemoveCommentMentionIDs(ids...)
+}
+
+// ClearBoardReport clears all "board_report" edges to the BoardReport entity.
+func (uu *UserUpdate) ClearBoardReport() *UserUpdate {
+	uu.mutation.ClearBoardReport()
+	return uu
+}
+
+// RemoveBoardReportIDs removes the "board_report" edge to BoardReport entities by IDs.
+func (uu *UserUpdate) RemoveBoardReportIDs(ids ...int) *UserUpdate {
+	uu.mutation.RemoveBoardReportIDs(ids...)
+	return uu
+}
+
+// RemoveBoardReport removes "board_report" edges to BoardReport entities.
+func (uu *UserUpdate) RemoveBoardReport(b ...*BoardReport) *UserUpdate {
+	ids := make([]int, len(b))
+	for i := range b {
+		ids[i] = b[i].ID
+	}
+	return uu.RemoveBoardReportIDs(ids...)
+}
+
+// ClearCommentReport clears all "comment_report" edges to the CommentReport entity.
+func (uu *UserUpdate) ClearCommentReport() *UserUpdate {
+	uu.mutation.ClearCommentReport()
+	return uu
+}
+
+// RemoveCommentReportIDs removes the "comment_report" edge to CommentReport entities by IDs.
+func (uu *UserUpdate) RemoveCommentReportIDs(ids ...int) *UserUpdate {
+	uu.mutation.RemoveCommentReportIDs(ids...)
+	return uu
+}
+
+// RemoveCommentReport removes "comment_report" edges to CommentReport entities.
+func (uu *UserUpdate) RemoveCommentReport(c ...*CommentReport) *UserUpdate {
+	ids := make([]int, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
+	}
+	return uu.RemoveCommentReportIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -523,6 +597,96 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if uu.mutation.BoardReportCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.BoardReportTable,
+			Columns: []string{user.BoardReportColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(boardreport.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uu.mutation.RemovedBoardReportIDs(); len(nodes) > 0 && !uu.mutation.BoardReportCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.BoardReportTable,
+			Columns: []string{user.BoardReportColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(boardreport.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uu.mutation.BoardReportIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.BoardReportTable,
+			Columns: []string{user.BoardReportColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(boardreport.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if uu.mutation.CommentReportCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.CommentReportTable,
+			Columns: []string{user.CommentReportColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(commentreport.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uu.mutation.RemovedCommentReportIDs(); len(nodes) > 0 && !uu.mutation.CommentReportCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.CommentReportTable,
+			Columns: []string{user.CommentReportColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(commentreport.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uu.mutation.CommentReportIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.CommentReportTable,
+			Columns: []string{user.CommentReportColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(commentreport.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, uu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{user.Label}
@@ -650,6 +814,36 @@ func (uuo *UserUpdateOne) AddCommentMention(c ...*CommentMention) *UserUpdateOne
 	return uuo.AddCommentMentionIDs(ids...)
 }
 
+// AddBoardReportIDs adds the "board_report" edge to the BoardReport entity by IDs.
+func (uuo *UserUpdateOne) AddBoardReportIDs(ids ...int) *UserUpdateOne {
+	uuo.mutation.AddBoardReportIDs(ids...)
+	return uuo
+}
+
+// AddBoardReport adds the "board_report" edges to the BoardReport entity.
+func (uuo *UserUpdateOne) AddBoardReport(b ...*BoardReport) *UserUpdateOne {
+	ids := make([]int, len(b))
+	for i := range b {
+		ids[i] = b[i].ID
+	}
+	return uuo.AddBoardReportIDs(ids...)
+}
+
+// AddCommentReportIDs adds the "comment_report" edge to the CommentReport entity by IDs.
+func (uuo *UserUpdateOne) AddCommentReportIDs(ids ...int) *UserUpdateOne {
+	uuo.mutation.AddCommentReportIDs(ids...)
+	return uuo
+}
+
+// AddCommentReport adds the "comment_report" edges to the CommentReport entity.
+func (uuo *UserUpdateOne) AddCommentReport(c ...*CommentReport) *UserUpdateOne {
+	ids := make([]int, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
+	}
+	return uuo.AddCommentReportIDs(ids...)
+}
+
 // Mutation returns the UserMutation object of the builder.
 func (uuo *UserUpdateOne) Mutation() *UserMutation {
 	return uuo.mutation
@@ -758,6 +952,48 @@ func (uuo *UserUpdateOne) RemoveCommentMention(c ...*CommentMention) *UserUpdate
 		ids[i] = c[i].ID
 	}
 	return uuo.RemoveCommentMentionIDs(ids...)
+}
+
+// ClearBoardReport clears all "board_report" edges to the BoardReport entity.
+func (uuo *UserUpdateOne) ClearBoardReport() *UserUpdateOne {
+	uuo.mutation.ClearBoardReport()
+	return uuo
+}
+
+// RemoveBoardReportIDs removes the "board_report" edge to BoardReport entities by IDs.
+func (uuo *UserUpdateOne) RemoveBoardReportIDs(ids ...int) *UserUpdateOne {
+	uuo.mutation.RemoveBoardReportIDs(ids...)
+	return uuo
+}
+
+// RemoveBoardReport removes "board_report" edges to BoardReport entities.
+func (uuo *UserUpdateOne) RemoveBoardReport(b ...*BoardReport) *UserUpdateOne {
+	ids := make([]int, len(b))
+	for i := range b {
+		ids[i] = b[i].ID
+	}
+	return uuo.RemoveBoardReportIDs(ids...)
+}
+
+// ClearCommentReport clears all "comment_report" edges to the CommentReport entity.
+func (uuo *UserUpdateOne) ClearCommentReport() *UserUpdateOne {
+	uuo.mutation.ClearCommentReport()
+	return uuo
+}
+
+// RemoveCommentReportIDs removes the "comment_report" edge to CommentReport entities by IDs.
+func (uuo *UserUpdateOne) RemoveCommentReportIDs(ids ...int) *UserUpdateOne {
+	uuo.mutation.RemoveCommentReportIDs(ids...)
+	return uuo
+}
+
+// RemoveCommentReport removes "comment_report" edges to CommentReport entities.
+func (uuo *UserUpdateOne) RemoveCommentReport(c ...*CommentReport) *UserUpdateOne {
+	ids := make([]int, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
+	}
+	return uuo.RemoveCommentReportIDs(ids...)
 }
 
 // Where appends a list predicates to the UserUpdate builder.
@@ -1056,6 +1292,96 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(commentmention.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if uuo.mutation.BoardReportCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.BoardReportTable,
+			Columns: []string{user.BoardReportColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(boardreport.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uuo.mutation.RemovedBoardReportIDs(); len(nodes) > 0 && !uuo.mutation.BoardReportCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.BoardReportTable,
+			Columns: []string{user.BoardReportColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(boardreport.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uuo.mutation.BoardReportIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.BoardReportTable,
+			Columns: []string{user.BoardReportColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(boardreport.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if uuo.mutation.CommentReportCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.CommentReportTable,
+			Columns: []string{user.CommentReportColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(commentreport.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uuo.mutation.RemovedCommentReportIDs(); len(nodes) > 0 && !uuo.mutation.CommentReportCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.CommentReportTable,
+			Columns: []string{user.CommentReportColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(commentreport.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uuo.mutation.CommentReportIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.CommentReportTable,
+			Columns: []string{user.CommentReportColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(commentreport.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

@@ -7,9 +7,12 @@ import (
 
 	"github.com/leeeeeoy/go_study/ent/board"
 	"github.com/leeeeeoy/go_study/ent/boardlike"
+	"github.com/leeeeeoy/go_study/ent/boardreport"
 	"github.com/leeeeeoy/go_study/ent/comment"
 	"github.com/leeeeeoy/go_study/ent/commentlike"
+	"github.com/leeeeeoy/go_study/ent/commentreport"
 	"github.com/leeeeeoy/go_study/ent/hashtag"
+	"github.com/leeeeeoy/go_study/ent/reporttype"
 	"github.com/leeeeeoy/go_study/ent/schema"
 	"github.com/leeeeeoy/go_study/ent/user"
 )
@@ -52,14 +55,34 @@ func init() {
 	boardlikeDescCreatedAt := boardlikeFields[2].Descriptor()
 	// boardlike.DefaultCreatedAt holds the default value on creation for the created_at field.
 	boardlike.DefaultCreatedAt = boardlikeDescCreatedAt.Default.(func() time.Time)
+	boardreportFields := schema.BoardReport{}.Fields()
+	_ = boardreportFields
+	// boardreportDescCreatedAt is the schema descriptor for created_at field.
+	boardreportDescCreatedAt := boardreportFields[5].Descriptor()
+	// boardreport.DefaultCreatedAt holds the default value on creation for the created_at field.
+	boardreport.DefaultCreatedAt = boardreportDescCreatedAt.Default.(func() time.Time)
+	// boardreportDescUpdatedAt is the schema descriptor for updated_at field.
+	boardreportDescUpdatedAt := boardreportFields[6].Descriptor()
+	// boardreport.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	boardreport.DefaultUpdatedAt = boardreportDescUpdatedAt.Default.(func() time.Time)
+	// boardreport.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	boardreport.UpdateDefaultUpdatedAt = boardreportDescUpdatedAt.UpdateDefault.(func() time.Time)
 	commentFields := schema.Comment{}.Fields()
 	_ = commentFields
+	// commentDescReportCount is the schema descriptor for report_count field.
+	commentDescReportCount := commentFields[5].Descriptor()
+	// comment.ReportCountValidator is a validator for the "report_count" field. It is called by the builders before save.
+	comment.ReportCountValidator = commentDescReportCount.Validators[0].(func(int) error)
+	// commentDescAuthorHeart is the schema descriptor for author_heart field.
+	commentDescAuthorHeart := commentFields[7].Descriptor()
+	// comment.DefaultAuthorHeart holds the default value on creation for the author_heart field.
+	comment.DefaultAuthorHeart = commentDescAuthorHeart.Default.(bool)
 	// commentDescCreatedAt is the schema descriptor for created_at field.
-	commentDescCreatedAt := commentFields[6].Descriptor()
+	commentDescCreatedAt := commentFields[8].Descriptor()
 	// comment.DefaultCreatedAt holds the default value on creation for the created_at field.
 	comment.DefaultCreatedAt = commentDescCreatedAt.Default.(func() time.Time)
 	// commentDescUpdatedAt is the schema descriptor for updated_at field.
-	commentDescUpdatedAt := commentFields[7].Descriptor()
+	commentDescUpdatedAt := commentFields[9].Descriptor()
 	// comment.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	comment.DefaultUpdatedAt = commentDescUpdatedAt.Default.(func() time.Time)
 	// comment.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
@@ -70,12 +93,30 @@ func init() {
 	commentlikeDescCreatedAt := commentlikeFields[2].Descriptor()
 	// commentlike.DefaultCreatedAt holds the default value on creation for the created_at field.
 	commentlike.DefaultCreatedAt = commentlikeDescCreatedAt.Default.(func() time.Time)
+	commentreportFields := schema.CommentReport{}.Fields()
+	_ = commentreportFields
+	// commentreportDescCreatedAt is the schema descriptor for created_at field.
+	commentreportDescCreatedAt := commentreportFields[5].Descriptor()
+	// commentreport.DefaultCreatedAt holds the default value on creation for the created_at field.
+	commentreport.DefaultCreatedAt = commentreportDescCreatedAt.Default.(func() time.Time)
+	// commentreportDescUpdatedAt is the schema descriptor for updated_at field.
+	commentreportDescUpdatedAt := commentreportFields[6].Descriptor()
+	// commentreport.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	commentreport.DefaultUpdatedAt = commentreportDescUpdatedAt.Default.(func() time.Time)
+	// commentreport.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	commentreport.UpdateDefaultUpdatedAt = commentreportDescUpdatedAt.UpdateDefault.(func() time.Time)
 	hashtagFields := schema.Hashtag{}.Fields()
 	_ = hashtagFields
 	// hashtagDescUsedCount is the schema descriptor for used_count field.
 	hashtagDescUsedCount := hashtagFields[1].Descriptor()
 	// hashtag.DefaultUsedCount holds the default value on creation for the used_count field.
 	hashtag.DefaultUsedCount = hashtagDescUsedCount.Default.(int)
+	reporttypeFields := schema.ReportType{}.Fields()
+	_ = reporttypeFields
+	// reporttypeDescInActive is the schema descriptor for in_active field.
+	reporttypeDescInActive := reporttypeFields[1].Descriptor()
+	// reporttype.DefaultInActive holds the default value on creation for the in_active field.
+	reporttype.DefaultInActive = reporttypeDescInActive.Default.(bool)
 	userFields := schema.User{}.Fields()
 	_ = userFields
 	// userDescCreatedAt is the schema descriptor for created_at field.

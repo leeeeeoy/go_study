@@ -14,6 +14,7 @@ import (
 	"github.com/leeeeeoy/go_study/ent/comment"
 	"github.com/leeeeeoy/go_study/ent/commentlike"
 	"github.com/leeeeeoy/go_study/ent/commentmention"
+	"github.com/leeeeeoy/go_study/ent/commentreport"
 	"github.com/leeeeeoy/go_study/ent/user"
 )
 
@@ -70,9 +71,29 @@ func (cc *CommentCreate) SetStatus(c comment.Status) *CommentCreate {
 	return cc
 }
 
+// SetReportCount sets the "report_count" field.
+func (cc *CommentCreate) SetReportCount(i int) *CommentCreate {
+	cc.mutation.SetReportCount(i)
+	return cc
+}
+
 // SetLanguageType sets the "language_type" field.
 func (cc *CommentCreate) SetLanguageType(s string) *CommentCreate {
 	cc.mutation.SetLanguageType(s)
+	return cc
+}
+
+// SetAuthorHeart sets the "author_heart" field.
+func (cc *CommentCreate) SetAuthorHeart(b bool) *CommentCreate {
+	cc.mutation.SetAuthorHeart(b)
+	return cc
+}
+
+// SetNillableAuthorHeart sets the "author_heart" field if the given value is not nil.
+func (cc *CommentCreate) SetNillableAuthorHeart(b *bool) *CommentCreate {
+	if b != nil {
+		cc.SetAuthorHeart(*b)
+	}
 	return cc
 }
 
@@ -144,6 +165,21 @@ func (cc *CommentCreate) AddCommentMention(c ...*CommentMention) *CommentCreate 
 	return cc.AddCommentMentionIDs(ids...)
 }
 
+// AddCommentReportIDs adds the "comment_report" edge to the CommentReport entity by IDs.
+func (cc *CommentCreate) AddCommentReportIDs(ids ...int) *CommentCreate {
+	cc.mutation.AddCommentReportIDs(ids...)
+	return cc
+}
+
+// AddCommentReport adds the "comment_report" edges to the CommentReport entity.
+func (cc *CommentCreate) AddCommentReport(c ...*CommentReport) *CommentCreate {
+	ids := make([]int, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
+	}
+	return cc.AddCommentReportIDs(ids...)
+}
+
 // Mutation returns the CommentMutation object of the builder.
 func (cc *CommentCreate) Mutation() *CommentMutation {
 	return cc.mutation
@@ -179,6 +215,10 @@ func (cc *CommentCreate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (cc *CommentCreate) defaults() {
+	if _, ok := cc.mutation.AuthorHeart(); !ok {
+		v := comment.DefaultAuthorHeart
+		cc.mutation.SetAuthorHeart(v)
+	}
 	if _, ok := cc.mutation.CreatedAt(); !ok {
 		v := comment.DefaultCreatedAt()
 		cc.mutation.SetCreatedAt(v)
@@ -205,8 +245,19 @@ func (cc *CommentCreate) check() error {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "Comment.status": %w`, err)}
 		}
 	}
+	if _, ok := cc.mutation.ReportCount(); !ok {
+		return &ValidationError{Name: "report_count", err: errors.New(`ent: missing required field "Comment.report_count"`)}
+	}
+	if v, ok := cc.mutation.ReportCount(); ok {
+		if err := comment.ReportCountValidator(v); err != nil {
+			return &ValidationError{Name: "report_count", err: fmt.Errorf(`ent: validator failed for field "Comment.report_count": %w`, err)}
+		}
+	}
 	if _, ok := cc.mutation.LanguageType(); !ok {
 		return &ValidationError{Name: "language_type", err: errors.New(`ent: missing required field "Comment.language_type"`)}
+	}
+	if _, ok := cc.mutation.AuthorHeart(); !ok {
+		return &ValidationError{Name: "author_heart", err: errors.New(`ent: missing required field "Comment.author_heart"`)}
 	}
 	if _, ok := cc.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "Comment.created_at"`)}
@@ -252,9 +303,17 @@ func (cc *CommentCreate) createSpec() (*Comment, *sqlgraph.CreateSpec) {
 		_spec.SetField(comment.FieldStatus, field.TypeEnum, value)
 		_node.Status = value
 	}
+	if value, ok := cc.mutation.ReportCount(); ok {
+		_spec.SetField(comment.FieldReportCount, field.TypeInt, value)
+		_node.ReportCount = value
+	}
 	if value, ok := cc.mutation.LanguageType(); ok {
 		_spec.SetField(comment.FieldLanguageType, field.TypeString, value)
 		_node.LanguageType = value
+	}
+	if value, ok := cc.mutation.AuthorHeart(); ok {
+		_spec.SetField(comment.FieldAuthorHeart, field.TypeBool, value)
+		_node.AuthorHeart = value
 	}
 	if value, ok := cc.mutation.CreatedAt(); ok {
 		_spec.SetField(comment.FieldCreatedAt, field.TypeTime, value)
@@ -323,6 +382,22 @@ func (cc *CommentCreate) createSpec() (*Comment, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(commentmention.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := cc.mutation.CommentReportIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   comment.CommentReportTable,
+			Columns: []string{comment.CommentReportColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(commentreport.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

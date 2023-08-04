@@ -91,13 +91,52 @@ var (
 			},
 		},
 	}
+	// BoardReportsColumns holds the columns for the "board_reports" table.
+	BoardReportsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "comment", Type: field.TypeString, Nullable: true},
+		{Name: "status", Type: field.TypeEnum, Enums: []string{"activate", "deleted"}},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "board_id", Type: field.TypeInt, Nullable: true},
+		{Name: "report_type_id", Type: field.TypeInt, Unique: true, Nullable: true},
+		{Name: "reporter_id", Type: field.TypeInt, Nullable: true},
+	}
+	// BoardReportsTable holds the schema information for the "board_reports" table.
+	BoardReportsTable = &schema.Table{
+		Name:       "board_reports",
+		Columns:    BoardReportsColumns,
+		PrimaryKey: []*schema.Column{BoardReportsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "board_reports_boards_board_report",
+				Columns:    []*schema.Column{BoardReportsColumns[5]},
+				RefColumns: []*schema.Column{BoardsColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "board_reports_report_types_board_report",
+				Columns:    []*schema.Column{BoardReportsColumns[6]},
+				RefColumns: []*schema.Column{ReportTypesColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "board_reports_users_board_report",
+				Columns:    []*schema.Column{BoardReportsColumns[7]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
+	}
 	// CommentsColumns holds the columns for the "comments" table.
 	CommentsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "text", Type: field.TypeString},
 		{Name: "like_count", Type: field.TypeInt},
 		{Name: "status", Type: field.TypeEnum, Enums: []string{"activate", "deleted"}},
+		{Name: "report_count", Type: field.TypeInt},
 		{Name: "language_type", Type: field.TypeString},
+		{Name: "author_heart", Type: field.TypeBool, Default: false},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
 		{Name: "board_id", Type: field.TypeInt, Nullable: true},
@@ -111,13 +150,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "comments_boards_comments",
-				Columns:    []*schema.Column{CommentsColumns[7]},
+				Columns:    []*schema.Column{CommentsColumns[9]},
 				RefColumns: []*schema.Column{BoardsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "comments_users_comments",
-				Columns:    []*schema.Column{CommentsColumns[8]},
+				Columns:    []*schema.Column{CommentsColumns[10]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -176,6 +215,43 @@ var (
 			},
 		},
 	}
+	// CommentReportsColumns holds the columns for the "comment_reports" table.
+	CommentReportsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "desc", Type: field.TypeString, Nullable: true},
+		{Name: "status", Type: field.TypeEnum, Enums: []string{"activate", "deleted"}},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "comment_id", Type: field.TypeInt, Nullable: true},
+		{Name: "report_type_id", Type: field.TypeInt, Unique: true, Nullable: true},
+		{Name: "reporter_id", Type: field.TypeInt, Nullable: true},
+	}
+	// CommentReportsTable holds the schema information for the "comment_reports" table.
+	CommentReportsTable = &schema.Table{
+		Name:       "comment_reports",
+		Columns:    CommentReportsColumns,
+		PrimaryKey: []*schema.Column{CommentReportsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "comment_reports_comments_comment_report",
+				Columns:    []*schema.Column{CommentReportsColumns[5]},
+				RefColumns: []*schema.Column{CommentsColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "comment_reports_report_types_comment_report",
+				Columns:    []*schema.Column{CommentReportsColumns[6]},
+				RefColumns: []*schema.Column{ReportTypesColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "comment_reports_users_comment_report",
+				Columns:    []*schema.Column{CommentReportsColumns[7]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
+	}
 	// HashtagsColumns holds the columns for the "hashtags" table.
 	HashtagsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
@@ -187,6 +263,19 @@ var (
 		Name:       "hashtags",
 		Columns:    HashtagsColumns,
 		PrimaryKey: []*schema.Column{HashtagsColumns[0]},
+	}
+	// ReportTypesColumns holds the columns for the "report_types" table.
+	ReportTypesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "description", Type: field.TypeString, Nullable: true},
+		{Name: "in_active", Type: field.TypeBool, Default: false},
+		{Name: "order_num", Type: field.TypeInt},
+	}
+	// ReportTypesTable holds the schema information for the "report_types" table.
+	ReportTypesTable = &schema.Table{
+		Name:       "report_types",
+		Columns:    ReportTypesColumns,
+		PrimaryKey: []*schema.Column{ReportTypesColumns[0]},
 	}
 	// UsersColumns holds the columns for the "users" table.
 	UsersColumns = []*schema.Column{
@@ -207,10 +296,13 @@ var (
 		BoardsTable,
 		BoardHashtagsTable,
 		BoardLikesTable,
+		BoardReportsTable,
 		CommentsTable,
 		CommentLikesTable,
 		CommentMentionsTable,
+		CommentReportsTable,
 		HashtagsTable,
+		ReportTypesTable,
 		UsersTable,
 	}
 )
@@ -221,10 +313,16 @@ func init() {
 	BoardHashtagsTable.ForeignKeys[1].RefTable = HashtagsTable
 	BoardLikesTable.ForeignKeys[0].RefTable = BoardsTable
 	BoardLikesTable.ForeignKeys[1].RefTable = UsersTable
+	BoardReportsTable.ForeignKeys[0].RefTable = BoardsTable
+	BoardReportsTable.ForeignKeys[1].RefTable = ReportTypesTable
+	BoardReportsTable.ForeignKeys[2].RefTable = UsersTable
 	CommentsTable.ForeignKeys[0].RefTable = BoardsTable
 	CommentsTable.ForeignKeys[1].RefTable = UsersTable
 	CommentLikesTable.ForeignKeys[0].RefTable = CommentsTable
 	CommentLikesTable.ForeignKeys[1].RefTable = UsersTable
 	CommentMentionsTable.ForeignKeys[0].RefTable = CommentsTable
 	CommentMentionsTable.ForeignKeys[1].RefTable = UsersTable
+	CommentReportsTable.ForeignKeys[0].RefTable = CommentsTable
+	CommentReportsTable.ForeignKeys[1].RefTable = ReportTypesTable
+	CommentReportsTable.ForeignKeys[2].RefTable = UsersTable
 }

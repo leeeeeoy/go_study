@@ -36,5 +36,6 @@ func (Comment) Edges() []ent.Edge {
 		edge.From("user", User.Type).Unique().Ref("comments").Field("user_id"),
 		edge.To("comment_like", CommentLike.Type),
 		edge.To("comment_mention", CommentMention.Type),
+		edge.To("comment_report", CommentReport.Type),
 	}
 }

@@ -13,6 +13,7 @@ import (
 	"github.com/leeeeeoy/go_study/ent/board"
 	"github.com/leeeeeoy/go_study/ent/boardhashtag"
 	"github.com/leeeeeoy/go_study/ent/boardlike"
+	"github.com/leeeeeoy/go_study/ent/boardreport"
 	"github.com/leeeeeoy/go_study/ent/comment"
 	"github.com/leeeeeoy/go_study/ent/user"
 )
@@ -176,6 +177,21 @@ func (bc *BoardCreate) AddBoardHashtag(b ...*BoardHashtag) *BoardCreate {
 		ids[i] = b[i].ID
 	}
 	return bc.AddBoardHashtagIDs(ids...)
+}
+
+// AddBoardReportIDs adds the "board_report" edge to the BoardReport entity by IDs.
+func (bc *BoardCreate) AddBoardReportIDs(ids ...int) *BoardCreate {
+	bc.mutation.AddBoardReportIDs(ids...)
+	return bc
+}
+
+// AddBoardReport adds the "board_report" edges to the BoardReport entity.
+func (bc *BoardCreate) AddBoardReport(b ...*BoardReport) *BoardCreate {
+	ids := make([]int, len(b))
+	for i := range b {
+		ids[i] = b[i].ID
+	}
+	return bc.AddBoardReportIDs(ids...)
 }
 
 // Mutation returns the BoardMutation object of the builder.
@@ -408,6 +424,22 @@ func (bc *BoardCreate) createSpec() (*Board, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(boardhashtag.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := bc.mutation.BoardReportIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   board.BoardReportTable,
+			Columns: []string{board.BoardReportColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(boardreport.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

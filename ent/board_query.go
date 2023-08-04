@@ -14,6 +14,7 @@ import (
 	"github.com/leeeeeoy/go_study/ent/board"
 	"github.com/leeeeeoy/go_study/ent/boardhashtag"
 	"github.com/leeeeeoy/go_study/ent/boardlike"
+	"github.com/leeeeeoy/go_study/ent/boardreport"
 	"github.com/leeeeeoy/go_study/ent/comment"
 	"github.com/leeeeeoy/go_study/ent/predicate"
 	"github.com/leeeeeoy/go_study/ent/user"
@@ -30,6 +31,7 @@ type BoardQuery struct {
 	withComments     *CommentQuery
 	withBoardLike    *BoardLikeQuery
 	withBoardHashtag *BoardHashtagQuery
+	withBoardReport  *BoardReportQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -147,6 +149,28 @@ func (bq *BoardQuery) QueryBoardHashtag() *BoardHashtagQuery {
 			sqlgraph.From(board.Table, board.FieldID, selector),
 			sqlgraph.To(boardhashtag.Table, boardhashtag.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, board.BoardHashtagTable, board.BoardHashtagColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(bq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryBoardReport chains the current query on the "board_report" edge.
+func (bq *BoardQuery) QueryBoardReport() *BoardReportQuery {
+	query := (&BoardReportClient{config: bq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := bq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := bq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(board.Table, board.FieldID, selector),
+			sqlgraph.To(boardreport.Table, boardreport.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, board.BoardReportTable, board.BoardReportColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(bq.driver.Dialect(), step)
 		return fromU, nil
@@ -350,6 +374,7 @@ func (bq *BoardQuery) Clone() *BoardQuery {
 		withComments:     bq.withComments.Clone(),
 		withBoardLike:    bq.withBoardLike.Clone(),
 		withBoardHashtag: bq.withBoardHashtag.Clone(),
+		withBoardReport:  bq.withBoardReport.Clone(),
 		// clone intermediate query.
 		sql:  bq.sql.Clone(),
 		path: bq.path,
@@ -397,6 +422,17 @@ func (bq *BoardQuery) WithBoardHashtag(opts ...func(*BoardHashtagQuery)) *BoardQ
 		opt(query)
 	}
 	bq.withBoardHashtag = query
+	return bq
+}
+
+// WithBoardReport tells the query-builder to eager-load the nodes that are connected to
+// the "board_report" edge. The optional arguments are used to configure the query builder of the edge.
+func (bq *BoardQuery) WithBoardReport(opts ...func(*BoardReportQuery)) *BoardQuery {
+	query := (&BoardReportClient{config: bq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	bq.withBoardReport = query
 	return bq
 }
 
@@ -478,11 +514,12 @@ func (bq *BoardQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Board,
 	var (
 		nodes       = []*Board{}
 		_spec       = bq.querySpec()
-		loadedTypes = [4]bool{
+		loadedTypes = [5]bool{
 			bq.withUser != nil,
 			bq.withComments != nil,
 			bq.withBoardLike != nil,
 			bq.withBoardHashtag != nil,
+			bq.withBoardReport != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -527,6 +564,13 @@ func (bq *BoardQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Board,
 		if err := bq.loadBoardHashtag(ctx, query, nodes,
 			func(n *Board) { n.Edges.BoardHashtag = []*BoardHashtag{} },
 			func(n *Board, e *BoardHashtag) { n.Edges.BoardHashtag = append(n.Edges.BoardHashtag, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := bq.withBoardReport; query != nil {
+		if err := bq.loadBoardReport(ctx, query, nodes,
+			func(n *Board) { n.Edges.BoardReport = []*BoardReport{} },
+			func(n *Board, e *BoardReport) { n.Edges.BoardReport = append(n.Edges.BoardReport, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -637,6 +681,36 @@ func (bq *BoardQuery) loadBoardHashtag(ctx context.Context, query *BoardHashtagQ
 	}
 	query.Where(predicate.BoardHashtag(func(s *sql.Selector) {
 		s.Where(sql.InValues(s.C(board.BoardHashtagColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.BoardID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "board_id" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (bq *BoardQuery) loadBoardReport(ctx context.Context, query *BoardReportQuery, nodes []*Board, init func(*Board), assign func(*Board, *BoardReport)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int]*Board)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(boardreport.FieldBoardID)
+	}
+	query.Where(predicate.BoardReport(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(board.BoardReportColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {

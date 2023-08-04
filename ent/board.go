@@ -58,9 +58,11 @@ type BoardEdges struct {
 	BoardLike []*BoardLike `json:"board_like,omitempty"`
 	// BoardHashtag holds the value of the board_hashtag edge.
 	BoardHashtag []*BoardHashtag `json:"board_hashtag,omitempty"`
+	// BoardReport holds the value of the board_report edge.
+	BoardReport []*BoardReport `json:"board_report,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [4]bool
+	loadedTypes [5]bool
 }
 
 // UserOrErr returns the User value or an error if the edge
@@ -101,6 +103,15 @@ func (e BoardEdges) BoardHashtagOrErr() ([]*BoardHashtag, error) {
 		return e.BoardHashtag, nil
 	}
 	return nil, &NotLoadedError{edge: "board_hashtag"}
+}
+
+// BoardReportOrErr returns the BoardReport value or an error if the edge
+// was not loaded in eager-loading.
+func (e BoardEdges) BoardReportOrErr() ([]*BoardReport, error) {
+	if e.loadedTypes[4] {
+		return e.BoardReport, nil
+	}
+	return nil, &NotLoadedError{edge: "board_report"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -238,6 +249,11 @@ func (b *Board) QueryBoardLike() *BoardLikeQuery {
 // QueryBoardHashtag queries the "board_hashtag" edge of the Board entity.
 func (b *Board) QueryBoardHashtag() *BoardHashtagQuery {
 	return NewBoardClient(b.config).QueryBoardHashtag(b)
+}
+
+// QueryBoardReport queries the "board_report" edge of the Board entity.
+func (b *Board) QueryBoardReport() *BoardReportQuery {
+	return NewBoardClient(b.config).QueryBoardReport(b)
 }
 
 // Update returns a builder for updating this Board.

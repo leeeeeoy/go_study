@@ -12,9 +12,11 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/leeeeeoy/go_study/ent/board"
 	"github.com/leeeeeoy/go_study/ent/boardlike"
+	"github.com/leeeeeoy/go_study/ent/boardreport"
 	"github.com/leeeeeoy/go_study/ent/comment"
 	"github.com/leeeeeoy/go_study/ent/commentlike"
 	"github.com/leeeeeoy/go_study/ent/commentmention"
+	"github.com/leeeeeoy/go_study/ent/commentreport"
 	"github.com/leeeeeoy/go_study/ent/user"
 )
 
@@ -130,6 +132,36 @@ func (uc *UserCreate) AddCommentMention(c ...*CommentMention) *UserCreate {
 		ids[i] = c[i].ID
 	}
 	return uc.AddCommentMentionIDs(ids...)
+}
+
+// AddBoardReportIDs adds the "board_report" edge to the BoardReport entity by IDs.
+func (uc *UserCreate) AddBoardReportIDs(ids ...int) *UserCreate {
+	uc.mutation.AddBoardReportIDs(ids...)
+	return uc
+}
+
+// AddBoardReport adds the "board_report" edges to the BoardReport entity.
+func (uc *UserCreate) AddBoardReport(b ...*BoardReport) *UserCreate {
+	ids := make([]int, len(b))
+	for i := range b {
+		ids[i] = b[i].ID
+	}
+	return uc.AddBoardReportIDs(ids...)
+}
+
+// AddCommentReportIDs adds the "comment_report" edge to the CommentReport entity by IDs.
+func (uc *UserCreate) AddCommentReportIDs(ids ...int) *UserCreate {
+	uc.mutation.AddCommentReportIDs(ids...)
+	return uc
+}
+
+// AddCommentReport adds the "comment_report" edges to the CommentReport entity.
+func (uc *UserCreate) AddCommentReport(c ...*CommentReport) *UserCreate {
+	ids := make([]int, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
+	}
+	return uc.AddCommentReportIDs(ids...)
 }
 
 // Mutation returns the UserMutation object of the builder.
@@ -302,6 +334,38 @@ func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(commentmention.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := uc.mutation.BoardReportIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.BoardReportTable,
+			Columns: []string{user.BoardReportColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(boardreport.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := uc.mutation.CommentReportIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.CommentReportTable,
+			Columns: []string{user.CommentReportColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(commentreport.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

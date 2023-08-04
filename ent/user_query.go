@@ -13,9 +13,11 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/leeeeeoy/go_study/ent/board"
 	"github.com/leeeeeoy/go_study/ent/boardlike"
+	"github.com/leeeeeoy/go_study/ent/boardreport"
 	"github.com/leeeeeoy/go_study/ent/comment"
 	"github.com/leeeeeoy/go_study/ent/commentlike"
 	"github.com/leeeeeoy/go_study/ent/commentmention"
+	"github.com/leeeeeoy/go_study/ent/commentreport"
 	"github.com/leeeeeoy/go_study/ent/predicate"
 	"github.com/leeeeeoy/go_study/ent/user"
 )
@@ -32,6 +34,8 @@ type UserQuery struct {
 	withCommentLike    *CommentLikeQuery
 	withComments       *CommentQuery
 	withCommentMention *CommentMentionQuery
+	withBoardReport    *BoardReportQuery
+	withCommentReport  *CommentReportQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -171,6 +175,50 @@ func (uq *UserQuery) QueryCommentMention() *CommentMentionQuery {
 			sqlgraph.From(user.Table, user.FieldID, selector),
 			sqlgraph.To(commentmention.Table, commentmention.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, user.CommentMentionTable, user.CommentMentionColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(uq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryBoardReport chains the current query on the "board_report" edge.
+func (uq *UserQuery) QueryBoardReport() *BoardReportQuery {
+	query := (&BoardReportClient{config: uq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := uq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := uq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(boardreport.Table, boardreport.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.BoardReportTable, user.BoardReportColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(uq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryCommentReport chains the current query on the "comment_report" edge.
+func (uq *UserQuery) QueryCommentReport() *CommentReportQuery {
+	query := (&CommentReportClient{config: uq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := uq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := uq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(commentreport.Table, commentreport.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.CommentReportTable, user.CommentReportColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(uq.driver.Dialect(), step)
 		return fromU, nil
@@ -375,6 +423,8 @@ func (uq *UserQuery) Clone() *UserQuery {
 		withCommentLike:    uq.withCommentLike.Clone(),
 		withComments:       uq.withComments.Clone(),
 		withCommentMention: uq.withCommentMention.Clone(),
+		withBoardReport:    uq.withBoardReport.Clone(),
+		withCommentReport:  uq.withCommentReport.Clone(),
 		// clone intermediate query.
 		sql:  uq.sql.Clone(),
 		path: uq.path,
@@ -433,6 +483,28 @@ func (uq *UserQuery) WithCommentMention(opts ...func(*CommentMentionQuery)) *Use
 		opt(query)
 	}
 	uq.withCommentMention = query
+	return uq
+}
+
+// WithBoardReport tells the query-builder to eager-load the nodes that are connected to
+// the "board_report" edge. The optional arguments are used to configure the query builder of the edge.
+func (uq *UserQuery) WithBoardReport(opts ...func(*BoardReportQuery)) *UserQuery {
+	query := (&BoardReportClient{config: uq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	uq.withBoardReport = query
+	return uq
+}
+
+// WithCommentReport tells the query-builder to eager-load the nodes that are connected to
+// the "comment_report" edge. The optional arguments are used to configure the query builder of the edge.
+func (uq *UserQuery) WithCommentReport(opts ...func(*CommentReportQuery)) *UserQuery {
+	query := (&CommentReportClient{config: uq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	uq.withCommentReport = query
 	return uq
 }
 
@@ -514,12 +586,14 @@ func (uq *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 	var (
 		nodes       = []*User{}
 		_spec       = uq.querySpec()
-		loadedTypes = [5]bool{
+		loadedTypes = [7]bool{
 			uq.withBoards != nil,
 			uq.withBoardLike != nil,
 			uq.withCommentLike != nil,
 			uq.withComments != nil,
 			uq.withCommentMention != nil,
+			uq.withBoardReport != nil,
+			uq.withCommentReport != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -572,6 +646,20 @@ func (uq *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 		if err := uq.loadCommentMention(ctx, query, nodes,
 			func(n *User) { n.Edges.CommentMention = []*CommentMention{} },
 			func(n *User, e *CommentMention) { n.Edges.CommentMention = append(n.Edges.CommentMention, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := uq.withBoardReport; query != nil {
+		if err := uq.loadBoardReport(ctx, query, nodes,
+			func(n *User) { n.Edges.BoardReport = []*BoardReport{} },
+			func(n *User, e *BoardReport) { n.Edges.BoardReport = append(n.Edges.BoardReport, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := uq.withCommentReport; query != nil {
+		if err := uq.loadCommentReport(ctx, query, nodes,
+			func(n *User) { n.Edges.CommentReport = []*CommentReport{} },
+			func(n *User, e *CommentReport) { n.Edges.CommentReport = append(n.Edges.CommentReport, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -723,6 +811,66 @@ func (uq *UserQuery) loadCommentMention(ctx context.Context, query *CommentMenti
 		node, ok := nodeids[fk]
 		if !ok {
 			return fmt.Errorf(`unexpected referenced foreign-key "user_id" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (uq *UserQuery) loadBoardReport(ctx context.Context, query *BoardReportQuery, nodes []*User, init func(*User), assign func(*User, *BoardReport)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(boardreport.FieldReporterID)
+	}
+	query.Where(predicate.BoardReport(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.BoardReportColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.ReporterID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "reporter_id" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (uq *UserQuery) loadCommentReport(ctx context.Context, query *CommentReportQuery, nodes []*User, init func(*User), assign func(*User, *CommentReport)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(commentreport.FieldReporterID)
+	}
+	query.Where(predicate.CommentReport(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.CommentReportColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.ReporterID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "reporter_id" returned %v for node %v`, fk, n.ID)
 		}
 		assign(node, n)
 	}
