@@ -57,6 +57,18 @@ func (f BoardReportFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value,
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.BoardReportMutation", m)
 }
 
+// The BookMarkFunc type is an adapter to allow the use of ordinary
+// function as BookMark mutator.
+type BookMarkFunc func(context.Context, *ent.BookMarkMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f BookMarkFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.BookMarkMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.BookMarkMutation", m)
+}
+
 // The CommentFunc type is an adapter to allow the use of ordinary
 // function as Comment mutator.
 type CommentFunc func(context.Context, *ent.CommentMutation) (ent.Value, error)

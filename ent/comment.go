@@ -27,7 +27,7 @@ type Comment struct {
 	BoardID int `json:"board_id,omitempty"`
 	// LikeCount holds the value of the "like_count" field.
 	LikeCount int `json:"like_count,omitempty"`
-	// Status holds the value of the "status" field.
+	// 0 is deleted, 1 is activate
 	Status comment.Status `json:"status,omitempty"`
 	// ReportCount holds the value of the "report_count" field.
 	ReportCount int `json:"report_count,omitempty"`

@@ -32,8 +32,10 @@ type Board struct {
 	ViewCount int `json:"view_count,omitempty"`
 	// ReportCount holds the value of the "report_count" field.
 	ReportCount int `json:"report_count,omitempty"`
-	// Status holds the value of the "status" field.
+	// 0 is deleted, 1 is activate
 	Status board.Status `json:"status,omitempty"`
+	// Private holds the value of the "private" field.
+	Private bool `json:"private,omitempty"`
 	// LanguageType holds the value of the "language_type" field.
 	LanguageType string `json:"language_type,omitempty"`
 	// Attachments holds the value of the "attachments" field.
@@ -54,6 +56,8 @@ type BoardEdges struct {
 	User *User `json:"user,omitempty"`
 	// Comments holds the value of the comments edge.
 	Comments []*Comment `json:"comments,omitempty"`
+	// BookMarks holds the value of the book_marks edge.
+	BookMarks []*BookMark `json:"book_marks,omitempty"`
 	// BoardLike holds the value of the board_like edge.
 	BoardLike []*BoardLike `json:"board_like,omitempty"`
 	// BoardHashtag holds the value of the board_hashtag edge.
@@ -62,7 +66,7 @@ type BoardEdges struct {
 	BoardReport []*BoardReport `json:"board_report,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [5]bool
+	loadedTypes [6]bool
 }
 
 // UserOrErr returns the User value or an error if the edge
@@ -87,10 +91,19 @@ func (e BoardEdges) CommentsOrErr() ([]*Comment, error) {
 	return nil, &NotLoadedError{edge: "comments"}
 }
 
+// BookMarksOrErr returns the BookMarks value or an error if the edge
+// was not loaded in eager-loading.
+func (e BoardEdges) BookMarksOrErr() ([]*BookMark, error) {
+	if e.loadedTypes[2] {
+		return e.BookMarks, nil
+	}
+	return nil, &NotLoadedError{edge: "book_marks"}
+}
+
 // BoardLikeOrErr returns the BoardLike value or an error if the edge
 // was not loaded in eager-loading.
 func (e BoardEdges) BoardLikeOrErr() ([]*BoardLike, error) {
-	if e.loadedTypes[2] {
+	if e.loadedTypes[3] {
 		return e.BoardLike, nil
 	}
 	return nil, &NotLoadedError{edge: "board_like"}
@@ -99,7 +112,7 @@ func (e BoardEdges) BoardLikeOrErr() ([]*BoardLike, error) {
 // BoardHashtagOrErr returns the BoardHashtag value or an error if the edge
 // was not loaded in eager-loading.
 func (e BoardEdges) BoardHashtagOrErr() ([]*BoardHashtag, error) {
-	if e.loadedTypes[3] {
+	if e.loadedTypes[4] {
 		return e.BoardHashtag, nil
 	}
 	return nil, &NotLoadedError{edge: "board_hashtag"}
@@ -108,7 +121,7 @@ func (e BoardEdges) BoardHashtagOrErr() ([]*BoardHashtag, error) {
 // BoardReportOrErr returns the BoardReport value or an error if the edge
 // was not loaded in eager-loading.
 func (e BoardEdges) BoardReportOrErr() ([]*BoardReport, error) {
-	if e.loadedTypes[4] {
+	if e.loadedTypes[5] {
 		return e.BoardReport, nil
 	}
 	return nil, &NotLoadedError{edge: "board_report"}
@@ -119,6 +132,8 @@ func (*Board) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case board.FieldPrivate:
+			values[i] = new(sql.NullBool)
 		case board.FieldID, board.FieldUserID, board.FieldLikeCount, board.FieldCommentCount, board.FieldViewCount, board.FieldReportCount:
 			values[i] = new(sql.NullInt64)
 		case board.FieldTitle, board.FieldText, board.FieldStatus, board.FieldLanguageType, board.FieldAttachments:
@@ -194,6 +209,12 @@ func (b *Board) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				b.Status = board.Status(value.String)
 			}
+		case board.FieldPrivate:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field private", values[i])
+			} else if value.Valid {
+				b.Private = value.Bool
+			}
 		case board.FieldLanguageType:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field language_type", values[i])
@@ -239,6 +260,11 @@ func (b *Board) QueryUser() *UserQuery {
 // QueryComments queries the "comments" edge of the Board entity.
 func (b *Board) QueryComments() *CommentQuery {
 	return NewBoardClient(b.config).QueryComments(b)
+}
+
+// QueryBookMarks queries the "book_marks" edge of the Board entity.
+func (b *Board) QueryBookMarks() *BookMarkQuery {
+	return NewBoardClient(b.config).QueryBookMarks(b)
 }
 
 // QueryBoardLike queries the "board_like" edge of the Board entity.
@@ -302,6 +328,9 @@ func (b *Board) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("status=")
 	builder.WriteString(fmt.Sprintf("%v", b.Status))
+	builder.WriteString(", ")
+	builder.WriteString("private=")
+	builder.WriteString(fmt.Sprintf("%v", b.Private))
 	builder.WriteString(", ")
 	builder.WriteString("language_type=")
 	builder.WriteString(b.LanguageType)

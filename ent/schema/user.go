@@ -28,6 +28,7 @@ func (User) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.To("boards", Board.Type),
 		edge.To("board_like", BoardLike.Type),
+		edge.To("book_marks", BookMark.Type),
 		edge.To("comment_like", CommentLike.Type),
 		edge.To("comments", Comment.Type),
 		edge.To("comment_mention", CommentMention.Type),

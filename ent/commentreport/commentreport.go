@@ -96,8 +96,8 @@ type Status string
 
 // Status values.
 const (
-	StatusActivate Status = "activate"
-	StatusDeleted  Status = "deleted"
+	Status0 Status = "0"
+	Status1 Status = "1"
 )
 
 func (s Status) String() string {
@@ -107,7 +107,7 @@ func (s Status) String() string {
 // StatusValidator is a validator for the "status" field enum values. It is called by the builders before save.
 func StatusValidator(s Status) error {
 	switch s {
-	case StatusActivate, StatusDeleted:
+	case Status0, Status1:
 		return nil
 	default:
 		return fmt.Errorf("commentreport: invalid enum value for status field: %q", s)

@@ -13,6 +13,7 @@ import (
 	"github.com/leeeeeoy/go_study/ent/board"
 	"github.com/leeeeeoy/go_study/ent/boardlike"
 	"github.com/leeeeeoy/go_study/ent/boardreport"
+	"github.com/leeeeeoy/go_study/ent/bookmark"
 	"github.com/leeeeeoy/go_study/ent/comment"
 	"github.com/leeeeeoy/go_study/ent/commentlike"
 	"github.com/leeeeeoy/go_study/ent/commentmention"
@@ -87,6 +88,21 @@ func (uc *UserCreate) AddBoardLike(b ...*BoardLike) *UserCreate {
 		ids[i] = b[i].ID
 	}
 	return uc.AddBoardLikeIDs(ids...)
+}
+
+// AddBookMarkIDs adds the "book_marks" edge to the BookMark entity by IDs.
+func (uc *UserCreate) AddBookMarkIDs(ids ...int) *UserCreate {
+	uc.mutation.AddBookMarkIDs(ids...)
+	return uc
+}
+
+// AddBookMarks adds the "book_marks" edges to the BookMark entity.
+func (uc *UserCreate) AddBookMarks(b ...*BookMark) *UserCreate {
+	ids := make([]int, len(b))
+	for i := range b {
+		ids[i] = b[i].ID
+	}
+	return uc.AddBookMarkIDs(ids...)
 }
 
 // AddCommentLikeIDs adds the "comment_like" edge to the CommentLike entity by IDs.
@@ -286,6 +302,22 @@ func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(boardlike.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := uc.mutation.BookMarksIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.BookMarksTable,
+			Columns: []string{user.BookMarksColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(bookmark.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

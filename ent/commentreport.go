@@ -28,7 +28,7 @@ type CommentReport struct {
 	ReporterID int `json:"reporter_id,omitempty"`
 	// Desc holds the value of the "desc" field.
 	Desc string `json:"desc,omitempty"`
-	// Status holds the value of the "status" field.
+	// 0 is deleted, 1 is activate
 	Status commentreport.Status `json:"status,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
 	CreatedAt time.Time `json:"created_at,omitempty"`

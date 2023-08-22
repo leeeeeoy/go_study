@@ -31,6 +31,8 @@ const (
 	FieldReportCount = "report_count"
 	// FieldStatus holds the string denoting the status field in the database.
 	FieldStatus = "status"
+	// FieldPrivate holds the string denoting the private field in the database.
+	FieldPrivate = "private"
 	// FieldLanguageType holds the string denoting the language_type field in the database.
 	FieldLanguageType = "language_type"
 	// FieldAttachments holds the string denoting the attachments field in the database.
@@ -43,6 +45,8 @@ const (
 	EdgeUser = "user"
 	// EdgeComments holds the string denoting the comments edge name in mutations.
 	EdgeComments = "comments"
+	// EdgeBookMarks holds the string denoting the book_marks edge name in mutations.
+	EdgeBookMarks = "book_marks"
 	// EdgeBoardLike holds the string denoting the board_like edge name in mutations.
 	EdgeBoardLike = "board_like"
 	// EdgeBoardHashtag holds the string denoting the board_hashtag edge name in mutations.
@@ -65,6 +69,13 @@ const (
 	CommentsInverseTable = "comments"
 	// CommentsColumn is the table column denoting the comments relation/edge.
 	CommentsColumn = "board_id"
+	// BookMarksTable is the table that holds the book_marks relation/edge.
+	BookMarksTable = "book_marks"
+	// BookMarksInverseTable is the table name for the BookMark entity.
+	// It exists in this package in order to avoid circular dependency with the "bookmark" package.
+	BookMarksInverseTable = "book_marks"
+	// BookMarksColumn is the table column denoting the book_marks relation/edge.
+	BookMarksColumn = "board_id"
 	// BoardLikeTable is the table that holds the board_like relation/edge.
 	BoardLikeTable = "board_likes"
 	// BoardLikeInverseTable is the table name for the BoardLike entity.
@@ -99,6 +110,7 @@ var Columns = []string{
 	FieldViewCount,
 	FieldReportCount,
 	FieldStatus,
+	FieldPrivate,
 	FieldLanguageType,
 	FieldAttachments,
 	FieldCreatedAt,
@@ -124,6 +136,8 @@ var (
 	ViewCountValidator func(int) error
 	// ReportCountValidator is a validator for the "report_count" field. It is called by the builders before save.
 	ReportCountValidator func(int) error
+	// DefaultPrivate holds the default value on creation for the "private" field.
+	DefaultPrivate bool
 	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
 	DefaultCreatedAt func() time.Time
 	// DefaultUpdatedAt holds the default value on creation for the "updated_at" field.
@@ -137,8 +151,8 @@ type Status string
 
 // Status values.
 const (
-	StatusActivate Status = "activate"
-	StatusDeleted  Status = "deleted"
+	Status0 Status = "0"
+	Status1 Status = "1"
 )
 
 func (s Status) String() string {
@@ -148,7 +162,7 @@ func (s Status) String() string {
 // StatusValidator is a validator for the "status" field enum values. It is called by the builders before save.
 func StatusValidator(s Status) error {
 	switch s {
-	case StatusActivate, StatusDeleted:
+	case Status0, Status1:
 		return nil
 	default:
 		return fmt.Errorf("board: invalid enum value for status field: %q", s)
@@ -203,6 +217,11 @@ func ByStatus(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldStatus, opts...).ToFunc()
 }
 
+// ByPrivate orders the results by the private field.
+func ByPrivate(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldPrivate, opts...).ToFunc()
+}
+
 // ByLanguageType orders the results by the language_type field.
 func ByLanguageType(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldLanguageType, opts...).ToFunc()
@@ -241,6 +260,20 @@ func ByCommentsCount(opts ...sql.OrderTermOption) OrderOption {
 func ByComments(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	return func(s *sql.Selector) {
 		sqlgraph.OrderByNeighborTerms(s, newCommentsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByBookMarksCount orders the results by book_marks count.
+func ByBookMarksCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newBookMarksStep(), opts...)
+	}
+}
+
+// ByBookMarks orders the results by book_marks terms.
+func ByBookMarks(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newBookMarksStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
 
@@ -297,6 +330,13 @@ func newCommentsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(CommentsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, CommentsTable, CommentsColumn),
+	)
+}
+func newBookMarksStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(BookMarksInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, BookMarksTable, BookMarksColumn),
 	)
 }
 func newBoardLikeStep() *sqlgraph.Step {

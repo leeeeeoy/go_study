@@ -28,7 +28,7 @@ type BoardReport struct {
 	ReporterID int `json:"reporter_id,omitempty"`
 	// Comment holds the value of the "comment" field.
 	Comment string `json:"comment,omitempty"`
-	// Status holds the value of the "status" field.
+	// 0 is deleted, 1 is activate
 	Status boardreport.Status `json:"status,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
 	CreatedAt time.Time `json:"created_at,omitempty"`

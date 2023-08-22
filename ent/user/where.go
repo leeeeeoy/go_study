@@ -356,6 +356,29 @@ func HasBoardLikeWith(preds ...predicate.BoardLike) predicate.User {
 	})
 }
 
+// HasBookMarks applies the HasEdge predicate on the "book_marks" edge.
+func HasBookMarks() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, BookMarksTable, BookMarksColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasBookMarksWith applies the HasEdge predicate on the "book_marks" edge with a given conditions (other predicates).
+func HasBookMarksWith(preds ...predicate.BookMark) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := newBookMarksStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // HasCommentLike applies the HasEdge predicate on the "comment_like" edge.
 func HasCommentLike() predicate.User {
 	return predicate.User(func(s *sql.Selector) {

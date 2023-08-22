@@ -26,6 +26,8 @@ const (
 	EdgeBoards = "boards"
 	// EdgeBoardLike holds the string denoting the board_like edge name in mutations.
 	EdgeBoardLike = "board_like"
+	// EdgeBookMarks holds the string denoting the book_marks edge name in mutations.
+	EdgeBookMarks = "book_marks"
 	// EdgeCommentLike holds the string denoting the comment_like edge name in mutations.
 	EdgeCommentLike = "comment_like"
 	// EdgeComments holds the string denoting the comments edge name in mutations.
@@ -52,6 +54,13 @@ const (
 	BoardLikeInverseTable = "board_likes"
 	// BoardLikeColumn is the table column denoting the board_like relation/edge.
 	BoardLikeColumn = "user_id"
+	// BookMarksTable is the table that holds the book_marks relation/edge.
+	BookMarksTable = "book_marks"
+	// BookMarksInverseTable is the table name for the BookMark entity.
+	// It exists in this package in order to avoid circular dependency with the "bookmark" package.
+	BookMarksInverseTable = "book_marks"
+	// BookMarksColumn is the table column denoting the book_marks relation/edge.
+	BookMarksColumn = "user_id"
 	// CommentLikeTable is the table that holds the comment_like relation/edge.
 	CommentLikeTable = "comment_likes"
 	// CommentLikeInverseTable is the table name for the CommentLike entity.
@@ -169,6 +178,20 @@ func ByBoardLike(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	}
 }
 
+// ByBookMarksCount orders the results by book_marks count.
+func ByBookMarksCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newBookMarksStep(), opts...)
+	}
+}
+
+// ByBookMarks orders the results by book_marks terms.
+func ByBookMarks(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newBookMarksStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
 // ByCommentLikeCount orders the results by comment_like count.
 func ByCommentLikeCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -250,6 +273,13 @@ func newBoardLikeStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(BoardLikeInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, BoardLikeTable, BoardLikeColumn),
+	)
+}
+func newBookMarksStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(BookMarksInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, BookMarksTable, BookMarksColumn),
 	)
 }
 func newCommentLikeStep() *sqlgraph.Step {

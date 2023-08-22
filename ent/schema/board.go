@@ -23,7 +23,8 @@ func (Board) Fields() []ent.Field {
 		field.Int("comment_count").Positive(),
 		field.Int("view_count").Positive(),
 		field.Int("report_count").Positive(),
-		field.Enum("status").Values("activate", "deleted"),
+		field.Enum("status").Values("0", "1").Comment("0 is deleted, 1 is activate"),
+		field.Bool("private").Default(false),
 		field.String("language_type"),
 		field.String("attachments").Optional(),
 		field.Time("created_at").Default(time.Now),
@@ -36,6 +37,7 @@ func (Board) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("user", User.Type).Unique().Ref("boards").Field("user_id"),
 		edge.To("comments", Comment.Type),
+		edge.To("book_marks", BookMark.Type),
 		edge.To("board_like", BoardLike.Type),
 		edge.To("board_hashtag", BoardHashtag.Type),
 		edge.To("board_report", BoardReport.Type),

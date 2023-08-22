@@ -14,6 +14,7 @@ import (
 	"github.com/leeeeeoy/go_study/ent/board"
 	"github.com/leeeeeoy/go_study/ent/boardlike"
 	"github.com/leeeeeoy/go_study/ent/boardreport"
+	"github.com/leeeeeoy/go_study/ent/bookmark"
 	"github.com/leeeeeoy/go_study/ent/comment"
 	"github.com/leeeeeoy/go_study/ent/commentlike"
 	"github.com/leeeeeoy/go_study/ent/commentmention"
@@ -31,6 +32,7 @@ type UserQuery struct {
 	predicates         []predicate.User
 	withBoards         *BoardQuery
 	withBoardLike      *BoardLikeQuery
+	withBookMarks      *BookMarkQuery
 	withCommentLike    *CommentLikeQuery
 	withComments       *CommentQuery
 	withCommentMention *CommentMentionQuery
@@ -109,6 +111,28 @@ func (uq *UserQuery) QueryBoardLike() *BoardLikeQuery {
 			sqlgraph.From(user.Table, user.FieldID, selector),
 			sqlgraph.To(boardlike.Table, boardlike.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, user.BoardLikeTable, user.BoardLikeColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(uq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryBookMarks chains the current query on the "book_marks" edge.
+func (uq *UserQuery) QueryBookMarks() *BookMarkQuery {
+	query := (&BookMarkClient{config: uq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := uq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := uq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(bookmark.Table, bookmark.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.BookMarksTable, user.BookMarksColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(uq.driver.Dialect(), step)
 		return fromU, nil
@@ -420,6 +444,7 @@ func (uq *UserQuery) Clone() *UserQuery {
 		predicates:         append([]predicate.User{}, uq.predicates...),
 		withBoards:         uq.withBoards.Clone(),
 		withBoardLike:      uq.withBoardLike.Clone(),
+		withBookMarks:      uq.withBookMarks.Clone(),
 		withCommentLike:    uq.withCommentLike.Clone(),
 		withComments:       uq.withComments.Clone(),
 		withCommentMention: uq.withCommentMention.Clone(),
@@ -450,6 +475,17 @@ func (uq *UserQuery) WithBoardLike(opts ...func(*BoardLikeQuery)) *UserQuery {
 		opt(query)
 	}
 	uq.withBoardLike = query
+	return uq
+}
+
+// WithBookMarks tells the query-builder to eager-load the nodes that are connected to
+// the "book_marks" edge. The optional arguments are used to configure the query builder of the edge.
+func (uq *UserQuery) WithBookMarks(opts ...func(*BookMarkQuery)) *UserQuery {
+	query := (&BookMarkClient{config: uq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	uq.withBookMarks = query
 	return uq
 }
 
@@ -586,9 +622,10 @@ func (uq *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 	var (
 		nodes       = []*User{}
 		_spec       = uq.querySpec()
-		loadedTypes = [7]bool{
+		loadedTypes = [8]bool{
 			uq.withBoards != nil,
 			uq.withBoardLike != nil,
+			uq.withBookMarks != nil,
 			uq.withCommentLike != nil,
 			uq.withComments != nil,
 			uq.withCommentMention != nil,
@@ -625,6 +662,13 @@ func (uq *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 		if err := uq.loadBoardLike(ctx, query, nodes,
 			func(n *User) { n.Edges.BoardLike = []*BoardLike{} },
 			func(n *User, e *BoardLike) { n.Edges.BoardLike = append(n.Edges.BoardLike, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := uq.withBookMarks; query != nil {
+		if err := uq.loadBookMarks(ctx, query, nodes,
+			func(n *User) { n.Edges.BookMarks = []*BookMark{} },
+			func(n *User, e *BookMark) { n.Edges.BookMarks = append(n.Edges.BookMarks, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -711,6 +755,36 @@ func (uq *UserQuery) loadBoardLike(ctx context.Context, query *BoardLikeQuery, n
 	}
 	query.Where(predicate.BoardLike(func(s *sql.Selector) {
 		s.Where(sql.InValues(s.C(user.BoardLikeColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.UserID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_id" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (uq *UserQuery) loadBookMarks(ctx context.Context, query *BookMarkQuery, nodes []*User, init func(*User), assign func(*User, *BookMark)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(bookmark.FieldUserID)
+	}
+	query.Where(predicate.BookMark(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.BookMarksColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {

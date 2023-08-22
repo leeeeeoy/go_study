@@ -20,7 +20,7 @@ func (Comment) Fields() []ent.Field {
 		field.Int("user_id").Optional(),
 		field.Int("board_id").Optional(),
 		field.Int("like_count"),
-		field.Enum("status").Values("activate", "deleted"),
+		field.Enum("status").Values("0", "1").Comment("0 is deleted, 1 is activate"),
 		field.Int("report_count").Positive(),
 		field.String("language_type"),
 		field.Bool("author_heart").Default(false),

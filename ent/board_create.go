@@ -14,6 +14,7 @@ import (
 	"github.com/leeeeeoy/go_study/ent/boardhashtag"
 	"github.com/leeeeeoy/go_study/ent/boardlike"
 	"github.com/leeeeeoy/go_study/ent/boardreport"
+	"github.com/leeeeeoy/go_study/ent/bookmark"
 	"github.com/leeeeeoy/go_study/ent/comment"
 	"github.com/leeeeeoy/go_study/ent/user"
 )
@@ -78,6 +79,20 @@ func (bc *BoardCreate) SetReportCount(i int) *BoardCreate {
 // SetStatus sets the "status" field.
 func (bc *BoardCreate) SetStatus(b board.Status) *BoardCreate {
 	bc.mutation.SetStatus(b)
+	return bc
+}
+
+// SetPrivate sets the "private" field.
+func (bc *BoardCreate) SetPrivate(b bool) *BoardCreate {
+	bc.mutation.SetPrivate(b)
+	return bc
+}
+
+// SetNillablePrivate sets the "private" field if the given value is not nil.
+func (bc *BoardCreate) SetNillablePrivate(b *bool) *BoardCreate {
+	if b != nil {
+		bc.SetPrivate(*b)
+	}
 	return bc
 }
 
@@ -147,6 +162,21 @@ func (bc *BoardCreate) AddComments(c ...*Comment) *BoardCreate {
 		ids[i] = c[i].ID
 	}
 	return bc.AddCommentIDs(ids...)
+}
+
+// AddBookMarkIDs adds the "book_marks" edge to the BookMark entity by IDs.
+func (bc *BoardCreate) AddBookMarkIDs(ids ...int) *BoardCreate {
+	bc.mutation.AddBookMarkIDs(ids...)
+	return bc
+}
+
+// AddBookMarks adds the "book_marks" edges to the BookMark entity.
+func (bc *BoardCreate) AddBookMarks(b ...*BookMark) *BoardCreate {
+	ids := make([]int, len(b))
+	for i := range b {
+		ids[i] = b[i].ID
+	}
+	return bc.AddBookMarkIDs(ids...)
 }
 
 // AddBoardLikeIDs adds the "board_like" edge to the BoardLike entity by IDs.
@@ -229,6 +259,10 @@ func (bc *BoardCreate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (bc *BoardCreate) defaults() {
+	if _, ok := bc.mutation.Private(); !ok {
+		v := board.DefaultPrivate
+		bc.mutation.SetPrivate(v)
+	}
 	if _, ok := bc.mutation.CreatedAt(); !ok {
 		v := board.DefaultCreatedAt()
 		bc.mutation.SetCreatedAt(v)
@@ -286,6 +320,9 @@ func (bc *BoardCreate) check() error {
 		if err := board.StatusValidator(v); err != nil {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "Board.status": %w`, err)}
 		}
+	}
+	if _, ok := bc.mutation.Private(); !ok {
+		return &ValidationError{Name: "private", err: errors.New(`ent: missing required field "Board.private"`)}
 	}
 	if _, ok := bc.mutation.LanguageType(); !ok {
 		return &ValidationError{Name: "language_type", err: errors.New(`ent: missing required field "Board.language_type"`)}
@@ -350,6 +387,10 @@ func (bc *BoardCreate) createSpec() (*Board, *sqlgraph.CreateSpec) {
 		_spec.SetField(board.FieldStatus, field.TypeEnum, value)
 		_node.Status = value
 	}
+	if value, ok := bc.mutation.Private(); ok {
+		_spec.SetField(board.FieldPrivate, field.TypeBool, value)
+		_node.Private = value
+	}
 	if value, ok := bc.mutation.LanguageType(); ok {
 		_spec.SetField(board.FieldLanguageType, field.TypeString, value)
 		_node.LanguageType = value
@@ -392,6 +433,22 @@ func (bc *BoardCreate) createSpec() (*Board, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(comment.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := bc.mutation.BookMarksIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   board.BookMarksTable,
+			Columns: []string{board.BookMarksColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(bookmark.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

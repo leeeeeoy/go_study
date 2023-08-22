@@ -18,6 +18,7 @@ import (
 	"github.com/leeeeeoy/go_study/ent/boardhashtag"
 	"github.com/leeeeeoy/go_study/ent/boardlike"
 	"github.com/leeeeeoy/go_study/ent/boardreport"
+	"github.com/leeeeeoy/go_study/ent/bookmark"
 	"github.com/leeeeeoy/go_study/ent/comment"
 	"github.com/leeeeeoy/go_study/ent/commentlike"
 	"github.com/leeeeeoy/go_study/ent/commentmention"
@@ -40,6 +41,8 @@ type Client struct {
 	BoardLike *BoardLikeClient
 	// BoardReport is the client for interacting with the BoardReport builders.
 	BoardReport *BoardReportClient
+	// BookMark is the client for interacting with the BookMark builders.
+	BookMark *BookMarkClient
 	// Comment is the client for interacting with the Comment builders.
 	Comment *CommentClient
 	// CommentLike is the client for interacting with the CommentLike builders.
@@ -71,6 +74,7 @@ func (c *Client) init() {
 	c.BoardHashtag = NewBoardHashtagClient(c.config)
 	c.BoardLike = NewBoardLikeClient(c.config)
 	c.BoardReport = NewBoardReportClient(c.config)
+	c.BookMark = NewBookMarkClient(c.config)
 	c.Comment = NewCommentClient(c.config)
 	c.CommentLike = NewCommentLikeClient(c.config)
 	c.CommentMention = NewCommentMentionClient(c.config)
@@ -164,6 +168,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		BoardHashtag:   NewBoardHashtagClient(cfg),
 		BoardLike:      NewBoardLikeClient(cfg),
 		BoardReport:    NewBoardReportClient(cfg),
+		BookMark:       NewBookMarkClient(cfg),
 		Comment:        NewCommentClient(cfg),
 		CommentLike:    NewCommentLikeClient(cfg),
 		CommentMention: NewCommentMentionClient(cfg),
@@ -194,6 +199,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		BoardHashtag:   NewBoardHashtagClient(cfg),
 		BoardLike:      NewBoardLikeClient(cfg),
 		BoardReport:    NewBoardReportClient(cfg),
+		BookMark:       NewBookMarkClient(cfg),
 		Comment:        NewCommentClient(cfg),
 		CommentLike:    NewCommentLikeClient(cfg),
 		CommentMention: NewCommentMentionClient(cfg),
@@ -230,8 +236,9 @@ func (c *Client) Close() error {
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
-		c.Board, c.BoardHashtag, c.BoardLike, c.BoardReport, c.Comment, c.CommentLike,
-		c.CommentMention, c.CommentReport, c.Hashtag, c.ReportType, c.User,
+		c.Board, c.BoardHashtag, c.BoardLike, c.BoardReport, c.BookMark, c.Comment,
+		c.CommentLike, c.CommentMention, c.CommentReport, c.Hashtag, c.ReportType,
+		c.User,
 	} {
 		n.Use(hooks...)
 	}
@@ -241,8 +248,9 @@ func (c *Client) Use(hooks ...Hook) {
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
-		c.Board, c.BoardHashtag, c.BoardLike, c.BoardReport, c.Comment, c.CommentLike,
-		c.CommentMention, c.CommentReport, c.Hashtag, c.ReportType, c.User,
+		c.Board, c.BoardHashtag, c.BoardLike, c.BoardReport, c.BookMark, c.Comment,
+		c.CommentLike, c.CommentMention, c.CommentReport, c.Hashtag, c.ReportType,
+		c.User,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -259,6 +267,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.BoardLike.mutate(ctx, m)
 	case *BoardReportMutation:
 		return c.BoardReport.mutate(ctx, m)
+	case *BookMarkMutation:
+		return c.BookMark.mutate(ctx, m)
 	case *CommentMutation:
 		return c.Comment.mutate(ctx, m)
 	case *CommentLikeMutation:
@@ -396,6 +406,22 @@ func (c *BoardClient) QueryComments(b *Board) *CommentQuery {
 			sqlgraph.From(board.Table, board.FieldID, id),
 			sqlgraph.To(comment.Table, comment.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, board.CommentsTable, board.CommentsColumn),
+		)
+		fromV = sqlgraph.Neighbors(b.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryBookMarks queries the book_marks edge of a Board.
+func (c *BoardClient) QueryBookMarks(b *Board) *BookMarkQuery {
+	query := (&BookMarkClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := b.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(board.Table, board.FieldID, id),
+			sqlgraph.To(bookmark.Table, bookmark.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, board.BookMarksTable, board.BookMarksColumn),
 		)
 		fromV = sqlgraph.Neighbors(b.driver.Dialect(), step)
 		return fromV, nil
@@ -939,6 +965,156 @@ func (c *BoardReportClient) mutate(ctx context.Context, m *BoardReportMutation) 
 		return (&BoardReportDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown BoardReport mutation op: %q", m.Op())
+	}
+}
+
+// BookMarkClient is a client for the BookMark schema.
+type BookMarkClient struct {
+	config
+}
+
+// NewBookMarkClient returns a client for the BookMark from the given config.
+func NewBookMarkClient(c config) *BookMarkClient {
+	return &BookMarkClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `bookmark.Hooks(f(g(h())))`.
+func (c *BookMarkClient) Use(hooks ...Hook) {
+	c.hooks.BookMark = append(c.hooks.BookMark, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `bookmark.Intercept(f(g(h())))`.
+func (c *BookMarkClient) Intercept(interceptors ...Interceptor) {
+	c.inters.BookMark = append(c.inters.BookMark, interceptors...)
+}
+
+// Create returns a builder for creating a BookMark entity.
+func (c *BookMarkClient) Create() *BookMarkCreate {
+	mutation := newBookMarkMutation(c.config, OpCreate)
+	return &BookMarkCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of BookMark entities.
+func (c *BookMarkClient) CreateBulk(builders ...*BookMarkCreate) *BookMarkCreateBulk {
+	return &BookMarkCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for BookMark.
+func (c *BookMarkClient) Update() *BookMarkUpdate {
+	mutation := newBookMarkMutation(c.config, OpUpdate)
+	return &BookMarkUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *BookMarkClient) UpdateOne(bm *BookMark) *BookMarkUpdateOne {
+	mutation := newBookMarkMutation(c.config, OpUpdateOne, withBookMark(bm))
+	return &BookMarkUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *BookMarkClient) UpdateOneID(id int) *BookMarkUpdateOne {
+	mutation := newBookMarkMutation(c.config, OpUpdateOne, withBookMarkID(id))
+	return &BookMarkUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for BookMark.
+func (c *BookMarkClient) Delete() *BookMarkDelete {
+	mutation := newBookMarkMutation(c.config, OpDelete)
+	return &BookMarkDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *BookMarkClient) DeleteOne(bm *BookMark) *BookMarkDeleteOne {
+	return c.DeleteOneID(bm.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *BookMarkClient) DeleteOneID(id int) *BookMarkDeleteOne {
+	builder := c.Delete().Where(bookmark.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &BookMarkDeleteOne{builder}
+}
+
+// Query returns a query builder for BookMark.
+func (c *BookMarkClient) Query() *BookMarkQuery {
+	return &BookMarkQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeBookMark},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a BookMark entity by its id.
+func (c *BookMarkClient) Get(ctx context.Context, id int) (*BookMark, error) {
+	return c.Query().Where(bookmark.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *BookMarkClient) GetX(ctx context.Context, id int) *BookMark {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryBoard queries the board edge of a BookMark.
+func (c *BookMarkClient) QueryBoard(bm *BookMark) *BoardQuery {
+	query := (&BoardClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := bm.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(bookmark.Table, bookmark.FieldID, id),
+			sqlgraph.To(board.Table, board.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, bookmark.BoardTable, bookmark.BoardColumn),
+		)
+		fromV = sqlgraph.Neighbors(bm.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryUser queries the user edge of a BookMark.
+func (c *BookMarkClient) QueryUser(bm *BookMark) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := bm.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(bookmark.Table, bookmark.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, bookmark.UserTable, bookmark.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(bm.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *BookMarkClient) Hooks() []Hook {
+	return c.hooks.BookMark
+}
+
+// Interceptors returns the client interceptors.
+func (c *BookMarkClient) Interceptors() []Interceptor {
+	return c.inters.BookMark
+}
+
+func (c *BookMarkClient) mutate(ctx context.Context, m *BookMarkMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&BookMarkCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&BookMarkUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&BookMarkUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&BookMarkDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown BookMark mutation op: %q", m.Op())
 	}
 }
 
@@ -2015,6 +2191,22 @@ func (c *UserClient) QueryBoardLike(u *User) *BoardLikeQuery {
 	return query
 }
 
+// QueryBookMarks queries the book_marks edge of a User.
+func (c *UserClient) QueryBookMarks(u *User) *BookMarkQuery {
+	query := (&BookMarkClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := u.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(bookmark.Table, bookmark.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.BookMarksTable, user.BookMarksColumn),
+		)
+		fromV = sqlgraph.Neighbors(u.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // QueryCommentLike queries the comment_like edge of a User.
 func (c *UserClient) QueryCommentLike(u *User) *CommentLikeQuery {
 	query := (&CommentLikeClient{config: c.config}).Query()
@@ -2123,11 +2315,11 @@ func (c *UserClient) mutate(ctx context.Context, m *UserMutation) (Value, error)
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		Board, BoardHashtag, BoardLike, BoardReport, Comment, CommentLike,
+		Board, BoardHashtag, BoardLike, BoardReport, BookMark, Comment, CommentLike,
 		CommentMention, CommentReport, Hashtag, ReportType, User []ent.Hook
 	}
 	inters struct {
-		Board, BoardHashtag, BoardLike, BoardReport, Comment, CommentLike,
+		Board, BoardHashtag, BoardLike, BoardReport, BookMark, Comment, CommentLike,
 		CommentMention, CommentReport, Hashtag, ReportType, User []ent.Interceptor
 	}
 )

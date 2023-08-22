@@ -8,6 +8,7 @@ import (
 	"github.com/leeeeeoy/go_study/ent/board"
 	"github.com/leeeeeoy/go_study/ent/boardlike"
 	"github.com/leeeeeoy/go_study/ent/boardreport"
+	"github.com/leeeeeoy/go_study/ent/bookmark"
 	"github.com/leeeeeoy/go_study/ent/comment"
 	"github.com/leeeeeoy/go_study/ent/commentlike"
 	"github.com/leeeeeoy/go_study/ent/commentreport"
@@ -39,12 +40,16 @@ func init() {
 	boardDescReportCount := boardFields[6].Descriptor()
 	// board.ReportCountValidator is a validator for the "report_count" field. It is called by the builders before save.
 	board.ReportCountValidator = boardDescReportCount.Validators[0].(func(int) error)
+	// boardDescPrivate is the schema descriptor for private field.
+	boardDescPrivate := boardFields[8].Descriptor()
+	// board.DefaultPrivate holds the default value on creation for the private field.
+	board.DefaultPrivate = boardDescPrivate.Default.(bool)
 	// boardDescCreatedAt is the schema descriptor for created_at field.
-	boardDescCreatedAt := boardFields[10].Descriptor()
+	boardDescCreatedAt := boardFields[11].Descriptor()
 	// board.DefaultCreatedAt holds the default value on creation for the created_at field.
 	board.DefaultCreatedAt = boardDescCreatedAt.Default.(func() time.Time)
 	// boardDescUpdatedAt is the schema descriptor for updated_at field.
-	boardDescUpdatedAt := boardFields[11].Descriptor()
+	boardDescUpdatedAt := boardFields[12].Descriptor()
 	// board.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	board.DefaultUpdatedAt = boardDescUpdatedAt.Default.(func() time.Time)
 	// board.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
@@ -67,6 +72,12 @@ func init() {
 	boardreport.DefaultUpdatedAt = boardreportDescUpdatedAt.Default.(func() time.Time)
 	// boardreport.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
 	boardreport.UpdateDefaultUpdatedAt = boardreportDescUpdatedAt.UpdateDefault.(func() time.Time)
+	bookmarkFields := schema.BookMark{}.Fields()
+	_ = bookmarkFields
+	// bookmarkDescCreatedAt is the schema descriptor for created_at field.
+	bookmarkDescCreatedAt := bookmarkFields[2].Descriptor()
+	// bookmark.DefaultCreatedAt holds the default value on creation for the created_at field.
+	bookmark.DefaultCreatedAt = bookmarkDescCreatedAt.Default.(func() time.Time)
 	commentFields := schema.Comment{}.Fields()
 	_ = commentFields
 	// commentDescReportCount is the schema descriptor for report_count field.

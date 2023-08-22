@@ -20,7 +20,7 @@ func (CommentReport) Fields() []ent.Field {
 		field.Int("report_type_id").Optional(),
 		field.Int("reporter_id").Optional(),
 		field.String("desc").Optional(),
-		field.Enum("status").Values("activate", "deleted"),
+		field.Enum("status").Values("0", "1").Comment("0 is deleted, 1 is activate"),
 		field.Time("created_at").Default(time.Now),
 		field.Time("updated_at").Default(time.Now).UpdateDefault(time.Now),
 	}

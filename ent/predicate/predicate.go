@@ -18,6 +18,9 @@ type BoardLike func(*sql.Selector)
 // BoardReport is the predicate function for boardreport builders.
 type BoardReport func(*sql.Selector)
 
+// BookMark is the predicate function for bookmark builders.
+type BookMark func(*sql.Selector)
+
 // Comment is the predicate function for comment builders.
 type Comment func(*sql.Selector)
 

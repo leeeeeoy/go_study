@@ -15,6 +15,7 @@ import (
 	"github.com/leeeeeoy/go_study/ent/boardhashtag"
 	"github.com/leeeeeoy/go_study/ent/boardlike"
 	"github.com/leeeeeoy/go_study/ent/boardreport"
+	"github.com/leeeeeoy/go_study/ent/bookmark"
 	"github.com/leeeeeoy/go_study/ent/comment"
 	"github.com/leeeeeoy/go_study/ent/commentlike"
 	"github.com/leeeeeoy/go_study/ent/commentmention"
@@ -38,6 +39,7 @@ const (
 	TypeBoardHashtag   = "BoardHashtag"
 	TypeBoardLike      = "BoardLike"
 	TypeBoardReport    = "BoardReport"
+	TypeBookMark       = "BookMark"
 	TypeComment        = "Comment"
 	TypeCommentLike    = "CommentLike"
 	TypeCommentMention = "CommentMention"
@@ -64,6 +66,7 @@ type BoardMutation struct {
 	report_count         *int
 	addreport_count      *int
 	status               *board.Status
+	private              *bool
 	language_type        *string
 	attachments          *string
 	created_at           *time.Time
@@ -74,6 +77,9 @@ type BoardMutation struct {
 	comments             map[int]struct{}
 	removedcomments      map[int]struct{}
 	clearedcomments      bool
+	book_marks           map[int]struct{}
+	removedbook_marks    map[int]struct{}
+	clearedbook_marks    bool
 	board_like           map[int]struct{}
 	removedboard_like    map[int]struct{}
 	clearedboard_like    bool
@@ -567,6 +573,42 @@ func (m *BoardMutation) ResetStatus() {
 	m.status = nil
 }
 
+// SetPrivate sets the "private" field.
+func (m *BoardMutation) SetPrivate(b bool) {
+	m.private = &b
+}
+
+// Private returns the value of the "private" field in the mutation.
+func (m *BoardMutation) Private() (r bool, exists bool) {
+	v := m.private
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPrivate returns the old "private" field's value of the Board entity.
+// If the Board object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BoardMutation) OldPrivate(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPrivate is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPrivate requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPrivate: %w", err)
+	}
+	return oldValue.Private, nil
+}
+
+// ResetPrivate resets all changes to the "private" field.
+func (m *BoardMutation) ResetPrivate() {
+	m.private = nil
+}
+
 // SetLanguageType sets the "language_type" field.
 func (m *BoardMutation) SetLanguageType(s string) {
 	m.language_type = &s
@@ -804,6 +846,60 @@ func (m *BoardMutation) ResetComments() {
 	m.removedcomments = nil
 }
 
+// AddBookMarkIDs adds the "book_marks" edge to the BookMark entity by ids.
+func (m *BoardMutation) AddBookMarkIDs(ids ...int) {
+	if m.book_marks == nil {
+		m.book_marks = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.book_marks[ids[i]] = struct{}{}
+	}
+}
+
+// ClearBookMarks clears the "book_marks" edge to the BookMark entity.
+func (m *BoardMutation) ClearBookMarks() {
+	m.clearedbook_marks = true
+}
+
+// BookMarksCleared reports if the "book_marks" edge to the BookMark entity was cleared.
+func (m *BoardMutation) BookMarksCleared() bool {
+	return m.clearedbook_marks
+}
+
+// RemoveBookMarkIDs removes the "book_marks" edge to the BookMark entity by IDs.
+func (m *BoardMutation) RemoveBookMarkIDs(ids ...int) {
+	if m.removedbook_marks == nil {
+		m.removedbook_marks = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.book_marks, ids[i])
+		m.removedbook_marks[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedBookMarks returns the removed IDs of the "book_marks" edge to the BookMark entity.
+func (m *BoardMutation) RemovedBookMarksIDs() (ids []int) {
+	for id := range m.removedbook_marks {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// BookMarksIDs returns the "book_marks" edge IDs in the mutation.
+func (m *BoardMutation) BookMarksIDs() (ids []int) {
+	for id := range m.book_marks {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetBookMarks resets all changes to the "book_marks" edge.
+func (m *BoardMutation) ResetBookMarks() {
+	m.book_marks = nil
+	m.clearedbook_marks = false
+	m.removedbook_marks = nil
+}
+
 // AddBoardLikeIDs adds the "board_like" edge to the BoardLike entity by ids.
 func (m *BoardMutation) AddBoardLikeIDs(ids ...int) {
 	if m.board_like == nil {
@@ -1000,7 +1096,7 @@ func (m *BoardMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *BoardMutation) Fields() []string {
-	fields := make([]string, 0, 12)
+	fields := make([]string, 0, 13)
 	if m.title != nil {
 		fields = append(fields, board.FieldTitle)
 	}
@@ -1024,6 +1120,9 @@ func (m *BoardMutation) Fields() []string {
 	}
 	if m.status != nil {
 		fields = append(fields, board.FieldStatus)
+	}
+	if m.private != nil {
+		fields = append(fields, board.FieldPrivate)
 	}
 	if m.language_type != nil {
 		fields = append(fields, board.FieldLanguageType)
@@ -1061,6 +1160,8 @@ func (m *BoardMutation) Field(name string) (ent.Value, bool) {
 		return m.ReportCount()
 	case board.FieldStatus:
 		return m.Status()
+	case board.FieldPrivate:
+		return m.Private()
 	case board.FieldLanguageType:
 		return m.LanguageType()
 	case board.FieldAttachments:
@@ -1094,6 +1195,8 @@ func (m *BoardMutation) OldField(ctx context.Context, name string) (ent.Value, e
 		return m.OldReportCount(ctx)
 	case board.FieldStatus:
 		return m.OldStatus(ctx)
+	case board.FieldPrivate:
+		return m.OldPrivate(ctx)
 	case board.FieldLanguageType:
 		return m.OldLanguageType(ctx)
 	case board.FieldAttachments:
@@ -1166,6 +1269,13 @@ func (m *BoardMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetStatus(v)
+		return nil
+	case board.FieldPrivate:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPrivate(v)
 		return nil
 	case board.FieldLanguageType:
 		v, ok := value.(string)
@@ -1334,6 +1444,9 @@ func (m *BoardMutation) ResetField(name string) error {
 	case board.FieldStatus:
 		m.ResetStatus()
 		return nil
+	case board.FieldPrivate:
+		m.ResetPrivate()
+		return nil
 	case board.FieldLanguageType:
 		m.ResetLanguageType()
 		return nil
@@ -1352,12 +1465,15 @@ func (m *BoardMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *BoardMutation) AddedEdges() []string {
-	edges := make([]string, 0, 5)
+	edges := make([]string, 0, 6)
 	if m.user != nil {
 		edges = append(edges, board.EdgeUser)
 	}
 	if m.comments != nil {
 		edges = append(edges, board.EdgeComments)
+	}
+	if m.book_marks != nil {
+		edges = append(edges, board.EdgeBookMarks)
 	}
 	if m.board_like != nil {
 		edges = append(edges, board.EdgeBoardLike)
@@ -1385,6 +1501,12 @@ func (m *BoardMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case board.EdgeBookMarks:
+		ids := make([]ent.Value, 0, len(m.book_marks))
+		for id := range m.book_marks {
+			ids = append(ids, id)
+		}
+		return ids
 	case board.EdgeBoardLike:
 		ids := make([]ent.Value, 0, len(m.board_like))
 		for id := range m.board_like {
@@ -1409,9 +1531,12 @@ func (m *BoardMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *BoardMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 5)
+	edges := make([]string, 0, 6)
 	if m.removedcomments != nil {
 		edges = append(edges, board.EdgeComments)
+	}
+	if m.removedbook_marks != nil {
+		edges = append(edges, board.EdgeBookMarks)
 	}
 	if m.removedboard_like != nil {
 		edges = append(edges, board.EdgeBoardLike)
@@ -1432,6 +1557,12 @@ func (m *BoardMutation) RemovedIDs(name string) []ent.Value {
 	case board.EdgeComments:
 		ids := make([]ent.Value, 0, len(m.removedcomments))
 		for id := range m.removedcomments {
+			ids = append(ids, id)
+		}
+		return ids
+	case board.EdgeBookMarks:
+		ids := make([]ent.Value, 0, len(m.removedbook_marks))
+		for id := range m.removedbook_marks {
 			ids = append(ids, id)
 		}
 		return ids
@@ -1459,12 +1590,15 @@ func (m *BoardMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *BoardMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 5)
+	edges := make([]string, 0, 6)
 	if m.cleareduser {
 		edges = append(edges, board.EdgeUser)
 	}
 	if m.clearedcomments {
 		edges = append(edges, board.EdgeComments)
+	}
+	if m.clearedbook_marks {
+		edges = append(edges, board.EdgeBookMarks)
 	}
 	if m.clearedboard_like {
 		edges = append(edges, board.EdgeBoardLike)
@@ -1486,6 +1620,8 @@ func (m *BoardMutation) EdgeCleared(name string) bool {
 		return m.cleareduser
 	case board.EdgeComments:
 		return m.clearedcomments
+	case board.EdgeBookMarks:
+		return m.clearedbook_marks
 	case board.EdgeBoardLike:
 		return m.clearedboard_like
 	case board.EdgeBoardHashtag:
@@ -1516,6 +1652,9 @@ func (m *BoardMutation) ResetEdge(name string) error {
 		return nil
 	case board.EdgeComments:
 		m.ResetComments()
+		return nil
+	case board.EdgeBookMarks:
+		m.ResetBookMarks()
 		return nil
 	case board.EdgeBoardLike:
 		m.ResetBoardLike()
@@ -3514,6 +3653,582 @@ func (m *BoardReportMutation) ResetEdge(name string) error {
 		return nil
 	}
 	return fmt.Errorf("unknown BoardReport edge %s", name)
+}
+
+// BookMarkMutation represents an operation that mutates the BookMark nodes in the graph.
+type BookMarkMutation struct {
+	config
+	op            Op
+	typ           string
+	id            *int
+	created_at    *time.Time
+	clearedFields map[string]struct{}
+	board         *int
+	clearedboard  bool
+	user          *int
+	cleareduser   bool
+	done          bool
+	oldValue      func(context.Context) (*BookMark, error)
+	predicates    []predicate.BookMark
+}
+
+var _ ent.Mutation = (*BookMarkMutation)(nil)
+
+// bookmarkOption allows management of the mutation configuration using functional options.
+type bookmarkOption func(*BookMarkMutation)
+
+// newBookMarkMutation creates new mutation for the BookMark entity.
+func newBookMarkMutation(c config, op Op, opts ...bookmarkOption) *BookMarkMutation {
+	m := &BookMarkMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeBookMark,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withBookMarkID sets the ID field of the mutation.
+func withBookMarkID(id int) bookmarkOption {
+	return func(m *BookMarkMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *BookMark
+		)
+		m.oldValue = func(ctx context.Context) (*BookMark, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().BookMark.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withBookMark sets the old BookMark of the mutation.
+func withBookMark(node *BookMark) bookmarkOption {
+	return func(m *BookMarkMutation) {
+		m.oldValue = func(context.Context) (*BookMark, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m BookMarkMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m BookMarkMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *BookMarkMutation) ID() (id int, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *BookMarkMutation) IDs(ctx context.Context) ([]int, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().BookMark.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetUserID sets the "user_id" field.
+func (m *BookMarkMutation) SetUserID(i int) {
+	m.user = &i
+}
+
+// UserID returns the value of the "user_id" field in the mutation.
+func (m *BookMarkMutation) UserID() (r int, exists bool) {
+	v := m.user
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUserID returns the old "user_id" field's value of the BookMark entity.
+// If the BookMark object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BookMarkMutation) OldUserID(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUserID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUserID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUserID: %w", err)
+	}
+	return oldValue.UserID, nil
+}
+
+// ClearUserID clears the value of the "user_id" field.
+func (m *BookMarkMutation) ClearUserID() {
+	m.user = nil
+	m.clearedFields[bookmark.FieldUserID] = struct{}{}
+}
+
+// UserIDCleared returns if the "user_id" field was cleared in this mutation.
+func (m *BookMarkMutation) UserIDCleared() bool {
+	_, ok := m.clearedFields[bookmark.FieldUserID]
+	return ok
+}
+
+// ResetUserID resets all changes to the "user_id" field.
+func (m *BookMarkMutation) ResetUserID() {
+	m.user = nil
+	delete(m.clearedFields, bookmark.FieldUserID)
+}
+
+// SetBoardID sets the "board_id" field.
+func (m *BookMarkMutation) SetBoardID(i int) {
+	m.board = &i
+}
+
+// BoardID returns the value of the "board_id" field in the mutation.
+func (m *BookMarkMutation) BoardID() (r int, exists bool) {
+	v := m.board
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldBoardID returns the old "board_id" field's value of the BookMark entity.
+// If the BookMark object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BookMarkMutation) OldBoardID(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldBoardID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldBoardID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldBoardID: %w", err)
+	}
+	return oldValue.BoardID, nil
+}
+
+// ClearBoardID clears the value of the "board_id" field.
+func (m *BookMarkMutation) ClearBoardID() {
+	m.board = nil
+	m.clearedFields[bookmark.FieldBoardID] = struct{}{}
+}
+
+// BoardIDCleared returns if the "board_id" field was cleared in this mutation.
+func (m *BookMarkMutation) BoardIDCleared() bool {
+	_, ok := m.clearedFields[bookmark.FieldBoardID]
+	return ok
+}
+
+// ResetBoardID resets all changes to the "board_id" field.
+func (m *BookMarkMutation) ResetBoardID() {
+	m.board = nil
+	delete(m.clearedFields, bookmark.FieldBoardID)
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *BookMarkMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *BookMarkMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the BookMark entity.
+// If the BookMark object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BookMarkMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *BookMarkMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// ClearBoard clears the "board" edge to the Board entity.
+func (m *BookMarkMutation) ClearBoard() {
+	m.clearedboard = true
+}
+
+// BoardCleared reports if the "board" edge to the Board entity was cleared.
+func (m *BookMarkMutation) BoardCleared() bool {
+	return m.BoardIDCleared() || m.clearedboard
+}
+
+// BoardIDs returns the "board" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// BoardID instead. It exists only for internal usage by the builders.
+func (m *BookMarkMutation) BoardIDs() (ids []int) {
+	if id := m.board; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetBoard resets all changes to the "board" edge.
+func (m *BookMarkMutation) ResetBoard() {
+	m.board = nil
+	m.clearedboard = false
+}
+
+// ClearUser clears the "user" edge to the User entity.
+func (m *BookMarkMutation) ClearUser() {
+	m.cleareduser = true
+}
+
+// UserCleared reports if the "user" edge to the User entity was cleared.
+func (m *BookMarkMutation) UserCleared() bool {
+	return m.UserIDCleared() || m.cleareduser
+}
+
+// UserIDs returns the "user" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// UserID instead. It exists only for internal usage by the builders.
+func (m *BookMarkMutation) UserIDs() (ids []int) {
+	if id := m.user; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetUser resets all changes to the "user" edge.
+func (m *BookMarkMutation) ResetUser() {
+	m.user = nil
+	m.cleareduser = false
+}
+
+// Where appends a list predicates to the BookMarkMutation builder.
+func (m *BookMarkMutation) Where(ps ...predicate.BookMark) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the BookMarkMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *BookMarkMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.BookMark, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *BookMarkMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *BookMarkMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (BookMark).
+func (m *BookMarkMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *BookMarkMutation) Fields() []string {
+	fields := make([]string, 0, 3)
+	if m.user != nil {
+		fields = append(fields, bookmark.FieldUserID)
+	}
+	if m.board != nil {
+		fields = append(fields, bookmark.FieldBoardID)
+	}
+	if m.created_at != nil {
+		fields = append(fields, bookmark.FieldCreatedAt)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *BookMarkMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case bookmark.FieldUserID:
+		return m.UserID()
+	case bookmark.FieldBoardID:
+		return m.BoardID()
+	case bookmark.FieldCreatedAt:
+		return m.CreatedAt()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *BookMarkMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case bookmark.FieldUserID:
+		return m.OldUserID(ctx)
+	case bookmark.FieldBoardID:
+		return m.OldBoardID(ctx)
+	case bookmark.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	}
+	return nil, fmt.Errorf("unknown BookMark field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *BookMarkMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case bookmark.FieldUserID:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUserID(v)
+		return nil
+	case bookmark.FieldBoardID:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetBoardID(v)
+		return nil
+	case bookmark.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	}
+	return fmt.Errorf("unknown BookMark field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *BookMarkMutation) AddedFields() []string {
+	var fields []string
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *BookMarkMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *BookMarkMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown BookMark numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *BookMarkMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(bookmark.FieldUserID) {
+		fields = append(fields, bookmark.FieldUserID)
+	}
+	if m.FieldCleared(bookmark.FieldBoardID) {
+		fields = append(fields, bookmark.FieldBoardID)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *BookMarkMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *BookMarkMutation) ClearField(name string) error {
+	switch name {
+	case bookmark.FieldUserID:
+		m.ClearUserID()
+		return nil
+	case bookmark.FieldBoardID:
+		m.ClearBoardID()
+		return nil
+	}
+	return fmt.Errorf("unknown BookMark nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *BookMarkMutation) ResetField(name string) error {
+	switch name {
+	case bookmark.FieldUserID:
+		m.ResetUserID()
+		return nil
+	case bookmark.FieldBoardID:
+		m.ResetBoardID()
+		return nil
+	case bookmark.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	}
+	return fmt.Errorf("unknown BookMark field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *BookMarkMutation) AddedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.board != nil {
+		edges = append(edges, bookmark.EdgeBoard)
+	}
+	if m.user != nil {
+		edges = append(edges, bookmark.EdgeUser)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *BookMarkMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case bookmark.EdgeBoard:
+		if id := m.board; id != nil {
+			return []ent.Value{*id}
+		}
+	case bookmark.EdgeUser:
+		if id := m.user; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *BookMarkMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 2)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *BookMarkMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *BookMarkMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.clearedboard {
+		edges = append(edges, bookmark.EdgeBoard)
+	}
+	if m.cleareduser {
+		edges = append(edges, bookmark.EdgeUser)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *BookMarkMutation) EdgeCleared(name string) bool {
+	switch name {
+	case bookmark.EdgeBoard:
+		return m.clearedboard
+	case bookmark.EdgeUser:
+		return m.cleareduser
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *BookMarkMutation) ClearEdge(name string) error {
+	switch name {
+	case bookmark.EdgeBoard:
+		m.ClearBoard()
+		return nil
+	case bookmark.EdgeUser:
+		m.ClearUser()
+		return nil
+	}
+	return fmt.Errorf("unknown BookMark unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *BookMarkMutation) ResetEdge(name string) error {
+	switch name {
+	case bookmark.EdgeBoard:
+		m.ResetBoard()
+		return nil
+	case bookmark.EdgeUser:
+		m.ResetUser()
+		return nil
+	}
+	return fmt.Errorf("unknown BookMark edge %s", name)
 }
 
 // CommentMutation represents an operation that mutates the Comment nodes in the graph.
@@ -7917,6 +8632,9 @@ type UserMutation struct {
 	board_like             map[int]struct{}
 	removedboard_like      map[int]struct{}
 	clearedboard_like      bool
+	book_marks             map[int]struct{}
+	removedbook_marks      map[int]struct{}
+	clearedbook_marks      bool
 	comment_like           map[int]struct{}
 	removedcomment_like    map[int]struct{}
 	clearedcomment_like    bool
@@ -8285,6 +9003,60 @@ func (m *UserMutation) ResetBoardLike() {
 	m.board_like = nil
 	m.clearedboard_like = false
 	m.removedboard_like = nil
+}
+
+// AddBookMarkIDs adds the "book_marks" edge to the BookMark entity by ids.
+func (m *UserMutation) AddBookMarkIDs(ids ...int) {
+	if m.book_marks == nil {
+		m.book_marks = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.book_marks[ids[i]] = struct{}{}
+	}
+}
+
+// ClearBookMarks clears the "book_marks" edge to the BookMark entity.
+func (m *UserMutation) ClearBookMarks() {
+	m.clearedbook_marks = true
+}
+
+// BookMarksCleared reports if the "book_marks" edge to the BookMark entity was cleared.
+func (m *UserMutation) BookMarksCleared() bool {
+	return m.clearedbook_marks
+}
+
+// RemoveBookMarkIDs removes the "book_marks" edge to the BookMark entity by IDs.
+func (m *UserMutation) RemoveBookMarkIDs(ids ...int) {
+	if m.removedbook_marks == nil {
+		m.removedbook_marks = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.book_marks, ids[i])
+		m.removedbook_marks[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedBookMarks returns the removed IDs of the "book_marks" edge to the BookMark entity.
+func (m *UserMutation) RemovedBookMarksIDs() (ids []int) {
+	for id := range m.removedbook_marks {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// BookMarksIDs returns the "book_marks" edge IDs in the mutation.
+func (m *UserMutation) BookMarksIDs() (ids []int) {
+	for id := range m.book_marks {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetBookMarks resets all changes to the "book_marks" edge.
+func (m *UserMutation) ResetBookMarks() {
+	m.book_marks = nil
+	m.clearedbook_marks = false
+	m.removedbook_marks = nil
 }
 
 // AddCommentLikeIDs adds the "comment_like" edge to the CommentLike entity by ids.
@@ -8741,12 +9513,15 @@ func (m *UserMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *UserMutation) AddedEdges() []string {
-	edges := make([]string, 0, 7)
+	edges := make([]string, 0, 8)
 	if m.boards != nil {
 		edges = append(edges, user.EdgeBoards)
 	}
 	if m.board_like != nil {
 		edges = append(edges, user.EdgeBoardLike)
+	}
+	if m.book_marks != nil {
+		edges = append(edges, user.EdgeBookMarks)
 	}
 	if m.comment_like != nil {
 		edges = append(edges, user.EdgeCommentLike)
@@ -8779,6 +9554,12 @@ func (m *UserMutation) AddedIDs(name string) []ent.Value {
 	case user.EdgeBoardLike:
 		ids := make([]ent.Value, 0, len(m.board_like))
 		for id := range m.board_like {
+			ids = append(ids, id)
+		}
+		return ids
+	case user.EdgeBookMarks:
+		ids := make([]ent.Value, 0, len(m.book_marks))
+		for id := range m.book_marks {
 			ids = append(ids, id)
 		}
 		return ids
@@ -8818,12 +9599,15 @@ func (m *UserMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *UserMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 7)
+	edges := make([]string, 0, 8)
 	if m.removedboards != nil {
 		edges = append(edges, user.EdgeBoards)
 	}
 	if m.removedboard_like != nil {
 		edges = append(edges, user.EdgeBoardLike)
+	}
+	if m.removedbook_marks != nil {
+		edges = append(edges, user.EdgeBookMarks)
 	}
 	if m.removedcomment_like != nil {
 		edges = append(edges, user.EdgeCommentLike)
@@ -8856,6 +9640,12 @@ func (m *UserMutation) RemovedIDs(name string) []ent.Value {
 	case user.EdgeBoardLike:
 		ids := make([]ent.Value, 0, len(m.removedboard_like))
 		for id := range m.removedboard_like {
+			ids = append(ids, id)
+		}
+		return ids
+	case user.EdgeBookMarks:
+		ids := make([]ent.Value, 0, len(m.removedbook_marks))
+		for id := range m.removedbook_marks {
 			ids = append(ids, id)
 		}
 		return ids
@@ -8895,12 +9685,15 @@ func (m *UserMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *UserMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 7)
+	edges := make([]string, 0, 8)
 	if m.clearedboards {
 		edges = append(edges, user.EdgeBoards)
 	}
 	if m.clearedboard_like {
 		edges = append(edges, user.EdgeBoardLike)
+	}
+	if m.clearedbook_marks {
+		edges = append(edges, user.EdgeBookMarks)
 	}
 	if m.clearedcomment_like {
 		edges = append(edges, user.EdgeCommentLike)
@@ -8928,6 +9721,8 @@ func (m *UserMutation) EdgeCleared(name string) bool {
 		return m.clearedboards
 	case user.EdgeBoardLike:
 		return m.clearedboard_like
+	case user.EdgeBookMarks:
+		return m.clearedbook_marks
 	case user.EdgeCommentLike:
 		return m.clearedcomment_like
 	case user.EdgeComments:
@@ -8959,6 +9754,9 @@ func (m *UserMutation) ResetEdge(name string) error {
 		return nil
 	case user.EdgeBoardLike:
 		m.ResetBoardLike()
+		return nil
+	case user.EdgeBookMarks:
+		m.ResetBookMarks()
 		return nil
 	case user.EdgeCommentLike:
 		m.ResetCommentLike()

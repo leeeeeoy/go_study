@@ -17,7 +17,8 @@ var (
 		{Name: "comment_count", Type: field.TypeInt},
 		{Name: "view_count", Type: field.TypeInt},
 		{Name: "report_count", Type: field.TypeInt},
-		{Name: "status", Type: field.TypeEnum, Enums: []string{"activate", "deleted"}},
+		{Name: "status", Type: field.TypeEnum, Enums: []string{"0", "1"}},
+		{Name: "private", Type: field.TypeBool, Default: false},
 		{Name: "language_type", Type: field.TypeString},
 		{Name: "attachments", Type: field.TypeString, Nullable: true},
 		{Name: "created_at", Type: field.TypeTime},
@@ -32,7 +33,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "boards_users_boards",
-				Columns:    []*schema.Column{BoardsColumns[12]},
+				Columns:    []*schema.Column{BoardsColumns[13]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -95,7 +96,7 @@ var (
 	BoardReportsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "comment", Type: field.TypeString, Nullable: true},
-		{Name: "status", Type: field.TypeEnum, Enums: []string{"activate", "deleted"}},
+		{Name: "status", Type: field.TypeEnum, Enums: []string{"0", "1"}},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
 		{Name: "board_id", Type: field.TypeInt, Nullable: true},
@@ -128,12 +129,39 @@ var (
 			},
 		},
 	}
+	// BookMarksColumns holds the columns for the "book_marks" table.
+	BookMarksColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "board_id", Type: field.TypeInt, Nullable: true},
+		{Name: "user_id", Type: field.TypeInt, Nullable: true},
+	}
+	// BookMarksTable holds the schema information for the "book_marks" table.
+	BookMarksTable = &schema.Table{
+		Name:       "book_marks",
+		Columns:    BookMarksColumns,
+		PrimaryKey: []*schema.Column{BookMarksColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "book_marks_boards_book_marks",
+				Columns:    []*schema.Column{BookMarksColumns[2]},
+				RefColumns: []*schema.Column{BoardsColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "book_marks_users_book_marks",
+				Columns:    []*schema.Column{BookMarksColumns[3]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
+	}
 	// CommentsColumns holds the columns for the "comments" table.
 	CommentsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "text", Type: field.TypeString},
 		{Name: "like_count", Type: field.TypeInt},
-		{Name: "status", Type: field.TypeEnum, Enums: []string{"activate", "deleted"}},
+		{Name: "status", Type: field.TypeEnum, Enums: []string{"0", "1"}},
 		{Name: "report_count", Type: field.TypeInt},
 		{Name: "language_type", Type: field.TypeString},
 		{Name: "author_heart", Type: field.TypeBool, Default: false},
@@ -219,7 +247,7 @@ var (
 	CommentReportsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "desc", Type: field.TypeString, Nullable: true},
-		{Name: "status", Type: field.TypeEnum, Enums: []string{"activate", "deleted"}},
+		{Name: "status", Type: field.TypeEnum, Enums: []string{"0", "1"}},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
 		{Name: "comment_id", Type: field.TypeInt, Nullable: true},
@@ -297,6 +325,7 @@ var (
 		BoardHashtagsTable,
 		BoardLikesTable,
 		BoardReportsTable,
+		BookMarksTable,
 		CommentsTable,
 		CommentLikesTable,
 		CommentMentionsTable,
@@ -316,6 +345,8 @@ func init() {
 	BoardReportsTable.ForeignKeys[0].RefTable = BoardsTable
 	BoardReportsTable.ForeignKeys[1].RefTable = ReportTypesTable
 	BoardReportsTable.ForeignKeys[2].RefTable = UsersTable
+	BookMarksTable.ForeignKeys[0].RefTable = BoardsTable
+	BookMarksTable.ForeignKeys[1].RefTable = UsersTable
 	CommentsTable.ForeignKeys[0].RefTable = BoardsTable
 	CommentsTable.ForeignKeys[1].RefTable = UsersTable
 	CommentLikesTable.ForeignKeys[0].RefTable = CommentsTable

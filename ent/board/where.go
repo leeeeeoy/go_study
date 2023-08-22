@@ -90,6 +90,11 @@ func ReportCount(v int) predicate.Board {
 	return predicate.Board(sql.FieldEQ(FieldReportCount, v))
 }
 
+// Private applies equality check predicate on the "private" field. It's identical to PrivateEQ.
+func Private(v bool) predicate.Board {
+	return predicate.Board(sql.FieldEQ(FieldPrivate, v))
+}
+
 // LanguageType applies equality check predicate on the "language_type" field. It's identical to LanguageTypeEQ.
 func LanguageType(v string) predicate.Board {
 	return predicate.Board(sql.FieldEQ(FieldLanguageType, v))
@@ -450,6 +455,16 @@ func StatusNotIn(vs ...Status) predicate.Board {
 	return predicate.Board(sql.FieldNotIn(FieldStatus, vs...))
 }
 
+// PrivateEQ applies the EQ predicate on the "private" field.
+func PrivateEQ(v bool) predicate.Board {
+	return predicate.Board(sql.FieldEQ(FieldPrivate, v))
+}
+
+// PrivateNEQ applies the NEQ predicate on the "private" field.
+func PrivateNEQ(v bool) predicate.Board {
+	return predicate.Board(sql.FieldNEQ(FieldPrivate, v))
+}
+
 // LanguageTypeEQ applies the EQ predicate on the "language_type" field.
 func LanguageTypeEQ(v string) predicate.Board {
 	return predicate.Board(sql.FieldEQ(FieldLanguageType, v))
@@ -708,6 +723,29 @@ func HasComments() predicate.Board {
 func HasCommentsWith(preds ...predicate.Comment) predicate.Board {
 	return predicate.Board(func(s *sql.Selector) {
 		step := newCommentsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasBookMarks applies the HasEdge predicate on the "book_marks" edge.
+func HasBookMarks() predicate.Board {
+	return predicate.Board(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, BookMarksTable, BookMarksColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasBookMarksWith applies the HasEdge predicate on the "book_marks" edge with a given conditions (other predicates).
+func HasBookMarksWith(preds ...predicate.BookMark) predicate.Board {
+	return predicate.Board(func(s *sql.Selector) {
+		step := newBookMarksStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

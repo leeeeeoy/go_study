@@ -16,6 +16,7 @@ import (
 	"github.com/leeeeeoy/go_study/ent/boardhashtag"
 	"github.com/leeeeeoy/go_study/ent/boardlike"
 	"github.com/leeeeeoy/go_study/ent/boardreport"
+	"github.com/leeeeeoy/go_study/ent/bookmark"
 	"github.com/leeeeeoy/go_study/ent/comment"
 	"github.com/leeeeeoy/go_study/ent/commentlike"
 	"github.com/leeeeeoy/go_study/ent/commentmention"
@@ -87,6 +88,7 @@ func checkColumn(table, column string) error {
 			boardhashtag.Table:   boardhashtag.ValidColumn,
 			boardlike.Table:      boardlike.ValidColumn,
 			boardreport.Table:    boardreport.ValidColumn,
+			bookmark.Table:       bookmark.ValidColumn,
 			comment.Table:        comment.ValidColumn,
 			commentlike.Table:    commentlike.ValidColumn,
 			commentmention.Table: commentmention.ValidColumn,

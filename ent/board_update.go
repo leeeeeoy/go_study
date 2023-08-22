@@ -15,6 +15,7 @@ import (
 	"github.com/leeeeeoy/go_study/ent/boardhashtag"
 	"github.com/leeeeeoy/go_study/ent/boardlike"
 	"github.com/leeeeeoy/go_study/ent/boardreport"
+	"github.com/leeeeeoy/go_study/ent/bookmark"
 	"github.com/leeeeeoy/go_study/ent/comment"
 	"github.com/leeeeeoy/go_study/ent/predicate"
 	"github.com/leeeeeoy/go_study/ent/user"
@@ -123,6 +124,20 @@ func (bu *BoardUpdate) SetStatus(b board.Status) *BoardUpdate {
 	return bu
 }
 
+// SetPrivate sets the "private" field.
+func (bu *BoardUpdate) SetPrivate(b bool) *BoardUpdate {
+	bu.mutation.SetPrivate(b)
+	return bu
+}
+
+// SetNillablePrivate sets the "private" field if the given value is not nil.
+func (bu *BoardUpdate) SetNillablePrivate(b *bool) *BoardUpdate {
+	if b != nil {
+		bu.SetPrivate(*b)
+	}
+	return bu
+}
+
 // SetLanguageType sets the "language_type" field.
 func (bu *BoardUpdate) SetLanguageType(s string) *BoardUpdate {
 	bu.mutation.SetLanguageType(s)
@@ -187,6 +202,21 @@ func (bu *BoardUpdate) AddComments(c ...*Comment) *BoardUpdate {
 		ids[i] = c[i].ID
 	}
 	return bu.AddCommentIDs(ids...)
+}
+
+// AddBookMarkIDs adds the "book_marks" edge to the BookMark entity by IDs.
+func (bu *BoardUpdate) AddBookMarkIDs(ids ...int) *BoardUpdate {
+	bu.mutation.AddBookMarkIDs(ids...)
+	return bu
+}
+
+// AddBookMarks adds the "book_marks" edges to the BookMark entity.
+func (bu *BoardUpdate) AddBookMarks(b ...*BookMark) *BoardUpdate {
+	ids := make([]int, len(b))
+	for i := range b {
+		ids[i] = b[i].ID
+	}
+	return bu.AddBookMarkIDs(ids...)
 }
 
 // AddBoardLikeIDs adds the "board_like" edge to the BoardLike entity by IDs.
@@ -264,6 +294,27 @@ func (bu *BoardUpdate) RemoveComments(c ...*Comment) *BoardUpdate {
 		ids[i] = c[i].ID
 	}
 	return bu.RemoveCommentIDs(ids...)
+}
+
+// ClearBookMarks clears all "book_marks" edges to the BookMark entity.
+func (bu *BoardUpdate) ClearBookMarks() *BoardUpdate {
+	bu.mutation.ClearBookMarks()
+	return bu
+}
+
+// RemoveBookMarkIDs removes the "book_marks" edge to BookMark entities by IDs.
+func (bu *BoardUpdate) RemoveBookMarkIDs(ids ...int) *BoardUpdate {
+	bu.mutation.RemoveBookMarkIDs(ids...)
+	return bu
+}
+
+// RemoveBookMarks removes "book_marks" edges to BookMark entities.
+func (bu *BoardUpdate) RemoveBookMarks(b ...*BookMark) *BoardUpdate {
+	ids := make([]int, len(b))
+	for i := range b {
+		ids[i] = b[i].ID
+	}
+	return bu.RemoveBookMarkIDs(ids...)
 }
 
 // ClearBoardLike clears all "board_like" edges to the BoardLike entity.
@@ -440,6 +491,9 @@ func (bu *BoardUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := bu.mutation.Status(); ok {
 		_spec.SetField(board.FieldStatus, field.TypeEnum, value)
 	}
+	if value, ok := bu.mutation.Private(); ok {
+		_spec.SetField(board.FieldPrivate, field.TypeBool, value)
+	}
 	if value, ok := bu.mutation.LanguageType(); ok {
 		_spec.SetField(board.FieldLanguageType, field.TypeString, value)
 	}
@@ -522,6 +576,51 @@ func (bu *BoardUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(comment.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if bu.mutation.BookMarksCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   board.BookMarksTable,
+			Columns: []string{board.BookMarksColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(bookmark.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := bu.mutation.RemovedBookMarksIDs(); len(nodes) > 0 && !bu.mutation.BookMarksCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   board.BookMarksTable,
+			Columns: []string{board.BookMarksColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(bookmark.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := bu.mutation.BookMarksIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   board.BookMarksTable,
+			Columns: []string{board.BookMarksColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(bookmark.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {
@@ -774,6 +873,20 @@ func (buo *BoardUpdateOne) SetStatus(b board.Status) *BoardUpdateOne {
 	return buo
 }
 
+// SetPrivate sets the "private" field.
+func (buo *BoardUpdateOne) SetPrivate(b bool) *BoardUpdateOne {
+	buo.mutation.SetPrivate(b)
+	return buo
+}
+
+// SetNillablePrivate sets the "private" field if the given value is not nil.
+func (buo *BoardUpdateOne) SetNillablePrivate(b *bool) *BoardUpdateOne {
+	if b != nil {
+		buo.SetPrivate(*b)
+	}
+	return buo
+}
+
 // SetLanguageType sets the "language_type" field.
 func (buo *BoardUpdateOne) SetLanguageType(s string) *BoardUpdateOne {
 	buo.mutation.SetLanguageType(s)
@@ -838,6 +951,21 @@ func (buo *BoardUpdateOne) AddComments(c ...*Comment) *BoardUpdateOne {
 		ids[i] = c[i].ID
 	}
 	return buo.AddCommentIDs(ids...)
+}
+
+// AddBookMarkIDs adds the "book_marks" edge to the BookMark entity by IDs.
+func (buo *BoardUpdateOne) AddBookMarkIDs(ids ...int) *BoardUpdateOne {
+	buo.mutation.AddBookMarkIDs(ids...)
+	return buo
+}
+
+// AddBookMarks adds the "book_marks" edges to the BookMark entity.
+func (buo *BoardUpdateOne) AddBookMarks(b ...*BookMark) *BoardUpdateOne {
+	ids := make([]int, len(b))
+	for i := range b {
+		ids[i] = b[i].ID
+	}
+	return buo.AddBookMarkIDs(ids...)
 }
 
 // AddBoardLikeIDs adds the "board_like" edge to the BoardLike entity by IDs.
@@ -915,6 +1043,27 @@ func (buo *BoardUpdateOne) RemoveComments(c ...*Comment) *BoardUpdateOne {
 		ids[i] = c[i].ID
 	}
 	return buo.RemoveCommentIDs(ids...)
+}
+
+// ClearBookMarks clears all "book_marks" edges to the BookMark entity.
+func (buo *BoardUpdateOne) ClearBookMarks() *BoardUpdateOne {
+	buo.mutation.ClearBookMarks()
+	return buo
+}
+
+// RemoveBookMarkIDs removes the "book_marks" edge to BookMark entities by IDs.
+func (buo *BoardUpdateOne) RemoveBookMarkIDs(ids ...int) *BoardUpdateOne {
+	buo.mutation.RemoveBookMarkIDs(ids...)
+	return buo
+}
+
+// RemoveBookMarks removes "book_marks" edges to BookMark entities.
+func (buo *BoardUpdateOne) RemoveBookMarks(b ...*BookMark) *BoardUpdateOne {
+	ids := make([]int, len(b))
+	for i := range b {
+		ids[i] = b[i].ID
+	}
+	return buo.RemoveBookMarkIDs(ids...)
 }
 
 // ClearBoardLike clears all "board_like" edges to the BoardLike entity.
@@ -1121,6 +1270,9 @@ func (buo *BoardUpdateOne) sqlSave(ctx context.Context) (_node *Board, err error
 	if value, ok := buo.mutation.Status(); ok {
 		_spec.SetField(board.FieldStatus, field.TypeEnum, value)
 	}
+	if value, ok := buo.mutation.Private(); ok {
+		_spec.SetField(board.FieldPrivate, field.TypeBool, value)
+	}
 	if value, ok := buo.mutation.LanguageType(); ok {
 		_spec.SetField(board.FieldLanguageType, field.TypeString, value)
 	}
@@ -1203,6 +1355,51 @@ func (buo *BoardUpdateOne) sqlSave(ctx context.Context) (_node *Board, err error
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(comment.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if buo.mutation.BookMarksCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   board.BookMarksTable,
+			Columns: []string{board.BookMarksColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(bookmark.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := buo.mutation.RemovedBookMarksIDs(); len(nodes) > 0 && !buo.mutation.BookMarksCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   board.BookMarksTable,
+			Columns: []string{board.BookMarksColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(bookmark.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := buo.mutation.BookMarksIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   board.BookMarksTable,
+			Columns: []string{board.BookMarksColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(bookmark.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

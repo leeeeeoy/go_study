@@ -37,6 +37,8 @@ type UserEdges struct {
 	Boards []*Board `json:"boards,omitempty"`
 	// BoardLike holds the value of the board_like edge.
 	BoardLike []*BoardLike `json:"board_like,omitempty"`
+	// BookMarks holds the value of the book_marks edge.
+	BookMarks []*BookMark `json:"book_marks,omitempty"`
 	// CommentLike holds the value of the comment_like edge.
 	CommentLike []*CommentLike `json:"comment_like,omitempty"`
 	// Comments holds the value of the comments edge.
@@ -49,7 +51,7 @@ type UserEdges struct {
 	CommentReport []*CommentReport `json:"comment_report,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [7]bool
+	loadedTypes [8]bool
 }
 
 // BoardsOrErr returns the Boards value or an error if the edge
@@ -70,10 +72,19 @@ func (e UserEdges) BoardLikeOrErr() ([]*BoardLike, error) {
 	return nil, &NotLoadedError{edge: "board_like"}
 }
 
+// BookMarksOrErr returns the BookMarks value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) BookMarksOrErr() ([]*BookMark, error) {
+	if e.loadedTypes[2] {
+		return e.BookMarks, nil
+	}
+	return nil, &NotLoadedError{edge: "book_marks"}
+}
+
 // CommentLikeOrErr returns the CommentLike value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) CommentLikeOrErr() ([]*CommentLike, error) {
-	if e.loadedTypes[2] {
+	if e.loadedTypes[3] {
 		return e.CommentLike, nil
 	}
 	return nil, &NotLoadedError{edge: "comment_like"}
@@ -82,7 +93,7 @@ func (e UserEdges) CommentLikeOrErr() ([]*CommentLike, error) {
 // CommentsOrErr returns the Comments value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) CommentsOrErr() ([]*Comment, error) {
-	if e.loadedTypes[3] {
+	if e.loadedTypes[4] {
 		return e.Comments, nil
 	}
 	return nil, &NotLoadedError{edge: "comments"}
@@ -91,7 +102,7 @@ func (e UserEdges) CommentsOrErr() ([]*Comment, error) {
 // CommentMentionOrErr returns the CommentMention value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) CommentMentionOrErr() ([]*CommentMention, error) {
-	if e.loadedTypes[4] {
+	if e.loadedTypes[5] {
 		return e.CommentMention, nil
 	}
 	return nil, &NotLoadedError{edge: "comment_mention"}
@@ -100,7 +111,7 @@ func (e UserEdges) CommentMentionOrErr() ([]*CommentMention, error) {
 // BoardReportOrErr returns the BoardReport value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) BoardReportOrErr() ([]*BoardReport, error) {
-	if e.loadedTypes[5] {
+	if e.loadedTypes[6] {
 		return e.BoardReport, nil
 	}
 	return nil, &NotLoadedError{edge: "board_report"}
@@ -109,7 +120,7 @@ func (e UserEdges) BoardReportOrErr() ([]*BoardReport, error) {
 // CommentReportOrErr returns the CommentReport value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) CommentReportOrErr() ([]*CommentReport, error) {
-	if e.loadedTypes[6] {
+	if e.loadedTypes[7] {
 		return e.CommentReport, nil
 	}
 	return nil, &NotLoadedError{edge: "comment_report"}
@@ -192,6 +203,11 @@ func (u *User) QueryBoards() *BoardQuery {
 // QueryBoardLike queries the "board_like" edge of the User entity.
 func (u *User) QueryBoardLike() *BoardLikeQuery {
 	return NewUserClient(u.config).QueryBoardLike(u)
+}
+
+// QueryBookMarks queries the "book_marks" edge of the User entity.
+func (u *User) QueryBookMarks() *BookMarkQuery {
+	return NewUserClient(u.config).QueryBookMarks(u)
 }
 
 // QueryCommentLike queries the "comment_like" edge of the User entity.
