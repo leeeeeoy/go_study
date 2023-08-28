@@ -22,6 +22,8 @@ type Tx struct {
 	BoardReport *BoardReportClient
 	// BookMark is the client for interacting with the BookMark builders.
 	BookMark *BookMarkClient
+	// Category is the client for interacting with the Category builders.
+	Category *CategoryClient
 	// Comment is the client for interacting with the Comment builders.
 	Comment *CommentClient
 	// CommentLike is the client for interacting with the CommentLike builders.
@@ -34,6 +36,8 @@ type Tx struct {
 	Hashtag *HashtagClient
 	// ReportType is the client for interacting with the ReportType builders.
 	ReportType *ReportTypeClient
+	// Topic is the client for interacting with the Topic builders.
+	Topic *TopicClient
 	// User is the client for interacting with the User builders.
 	User *UserClient
 
@@ -172,12 +176,14 @@ func (tx *Tx) init() {
 	tx.BoardLike = NewBoardLikeClient(tx.config)
 	tx.BoardReport = NewBoardReportClient(tx.config)
 	tx.BookMark = NewBookMarkClient(tx.config)
+	tx.Category = NewCategoryClient(tx.config)
 	tx.Comment = NewCommentClient(tx.config)
 	tx.CommentLike = NewCommentLikeClient(tx.config)
 	tx.CommentMention = NewCommentMentionClient(tx.config)
 	tx.CommentReport = NewCommentReportClient(tx.config)
 	tx.Hashtag = NewHashtagClient(tx.config)
 	tx.ReportType = NewReportTypeClient(tx.config)
+	tx.Topic = NewTopicClient(tx.config)
 	tx.User = NewUserClient(tx.config)
 }
 

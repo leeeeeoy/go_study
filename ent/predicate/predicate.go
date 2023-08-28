@@ -21,6 +21,9 @@ type BoardReport func(*sql.Selector)
 // BookMark is the predicate function for bookmark builders.
 type BookMark func(*sql.Selector)
 
+// Category is the predicate function for category builders.
+type Category func(*sql.Selector)
+
 // Comment is the predicate function for comment builders.
 type Comment func(*sql.Selector)
 
@@ -38,6 +41,9 @@ type Hashtag func(*sql.Selector)
 
 // ReportType is the predicate function for reporttype builders.
 type ReportType func(*sql.Selector)
+
+// Topic is the predicate function for topic builders.
+type Topic func(*sql.Selector)
 
 // User is the predicate function for user builders.
 type User func(*sql.Selector)

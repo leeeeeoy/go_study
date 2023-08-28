@@ -19,6 +19,7 @@ func (Board) Fields() []ent.Field {
 		field.String("title"),
 		field.String("text"),
 		field.Int("user_id").Optional(),
+		field.Int("topic_id").Optional(),
 		field.Int("like_count").Positive(),
 		field.Int("comment_count").Positive(),
 		field.Int("view_count").Positive(),
@@ -36,6 +37,7 @@ func (Board) Fields() []ent.Field {
 func (Board) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("user", User.Type).Unique().Ref("boards").Field("user_id"),
+		edge.From("topic", Topic.Type).Unique().Ref("boards").Field("topic_id"),
 		edge.To("comments", Comment.Type),
 		edge.To("book_marks", BookMark.Type),
 		edge.To("board_like", BoardLike.Type),

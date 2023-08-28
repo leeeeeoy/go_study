@@ -10,6 +10,7 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"github.com/leeeeeoy/go_study/ent/board"
+	"github.com/leeeeeoy/go_study/ent/topic"
 	"github.com/leeeeeoy/go_study/ent/user"
 )
 
@@ -24,6 +25,8 @@ type Board struct {
 	Text string `json:"text,omitempty"`
 	// UserID holds the value of the "user_id" field.
 	UserID int `json:"user_id,omitempty"`
+	// TopicID holds the value of the "topic_id" field.
+	TopicID int `json:"topic_id,omitempty"`
 	// LikeCount holds the value of the "like_count" field.
 	LikeCount int `json:"like_count,omitempty"`
 	// CommentCount holds the value of the "comment_count" field.
@@ -54,6 +57,8 @@ type Board struct {
 type BoardEdges struct {
 	// User holds the value of the user edge.
 	User *User `json:"user,omitempty"`
+	// Topic holds the value of the topic edge.
+	Topic *Topic `json:"topic,omitempty"`
 	// Comments holds the value of the comments edge.
 	Comments []*Comment `json:"comments,omitempty"`
 	// BookMarks holds the value of the book_marks edge.
@@ -66,7 +71,7 @@ type BoardEdges struct {
 	BoardReport []*BoardReport `json:"board_report,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [6]bool
+	loadedTypes [7]bool
 }
 
 // UserOrErr returns the User value or an error if the edge
@@ -82,10 +87,23 @@ func (e BoardEdges) UserOrErr() (*User, error) {
 	return nil, &NotLoadedError{edge: "user"}
 }
 
+// TopicOrErr returns the Topic value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e BoardEdges) TopicOrErr() (*Topic, error) {
+	if e.loadedTypes[1] {
+		if e.Topic == nil {
+			// Edge was loaded but was not found.
+			return nil, &NotFoundError{label: topic.Label}
+		}
+		return e.Topic, nil
+	}
+	return nil, &NotLoadedError{edge: "topic"}
+}
+
 // CommentsOrErr returns the Comments value or an error if the edge
 // was not loaded in eager-loading.
 func (e BoardEdges) CommentsOrErr() ([]*Comment, error) {
-	if e.loadedTypes[1] {
+	if e.loadedTypes[2] {
 		return e.Comments, nil
 	}
 	return nil, &NotLoadedError{edge: "comments"}
@@ -94,7 +112,7 @@ func (e BoardEdges) CommentsOrErr() ([]*Comment, error) {
 // BookMarksOrErr returns the BookMarks value or an error if the edge
 // was not loaded in eager-loading.
 func (e BoardEdges) BookMarksOrErr() ([]*BookMark, error) {
-	if e.loadedTypes[2] {
+	if e.loadedTypes[3] {
 		return e.BookMarks, nil
 	}
 	return nil, &NotLoadedError{edge: "book_marks"}
@@ -103,7 +121,7 @@ func (e BoardEdges) BookMarksOrErr() ([]*BookMark, error) {
 // BoardLikeOrErr returns the BoardLike value or an error if the edge
 // was not loaded in eager-loading.
 func (e BoardEdges) BoardLikeOrErr() ([]*BoardLike, error) {
-	if e.loadedTypes[3] {
+	if e.loadedTypes[4] {
 		return e.BoardLike, nil
 	}
 	return nil, &NotLoadedError{edge: "board_like"}
@@ -112,7 +130,7 @@ func (e BoardEdges) BoardLikeOrErr() ([]*BoardLike, error) {
 // BoardHashtagOrErr returns the BoardHashtag value or an error if the edge
 // was not loaded in eager-loading.
 func (e BoardEdges) BoardHashtagOrErr() ([]*BoardHashtag, error) {
-	if e.loadedTypes[4] {
+	if e.loadedTypes[5] {
 		return e.BoardHashtag, nil
 	}
 	return nil, &NotLoadedError{edge: "board_hashtag"}
@@ -121,7 +139,7 @@ func (e BoardEdges) BoardHashtagOrErr() ([]*BoardHashtag, error) {
 // BoardReportOrErr returns the BoardReport value or an error if the edge
 // was not loaded in eager-loading.
 func (e BoardEdges) BoardReportOrErr() ([]*BoardReport, error) {
-	if e.loadedTypes[5] {
+	if e.loadedTypes[6] {
 		return e.BoardReport, nil
 	}
 	return nil, &NotLoadedError{edge: "board_report"}
@@ -134,7 +152,7 @@ func (*Board) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case board.FieldPrivate:
 			values[i] = new(sql.NullBool)
-		case board.FieldID, board.FieldUserID, board.FieldLikeCount, board.FieldCommentCount, board.FieldViewCount, board.FieldReportCount:
+		case board.FieldID, board.FieldUserID, board.FieldTopicID, board.FieldLikeCount, board.FieldCommentCount, board.FieldViewCount, board.FieldReportCount:
 			values[i] = new(sql.NullInt64)
 		case board.FieldTitle, board.FieldText, board.FieldStatus, board.FieldLanguageType, board.FieldAttachments:
 			values[i] = new(sql.NullString)
@@ -178,6 +196,12 @@ func (b *Board) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field user_id", values[i])
 			} else if value.Valid {
 				b.UserID = int(value.Int64)
+			}
+		case board.FieldTopicID:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field topic_id", values[i])
+			} else if value.Valid {
+				b.TopicID = int(value.Int64)
 			}
 		case board.FieldLikeCount:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
@@ -257,6 +281,11 @@ func (b *Board) QueryUser() *UserQuery {
 	return NewBoardClient(b.config).QueryUser(b)
 }
 
+// QueryTopic queries the "topic" edge of the Board entity.
+func (b *Board) QueryTopic() *TopicQuery {
+	return NewBoardClient(b.config).QueryTopic(b)
+}
+
 // QueryComments queries the "comments" edge of the Board entity.
 func (b *Board) QueryComments() *CommentQuery {
 	return NewBoardClient(b.config).QueryComments(b)
@@ -313,6 +342,9 @@ func (b *Board) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("user_id=")
 	builder.WriteString(fmt.Sprintf("%v", b.UserID))
+	builder.WriteString(", ")
+	builder.WriteString("topic_id=")
+	builder.WriteString(fmt.Sprintf("%v", b.TopicID))
 	builder.WriteString(", ")
 	builder.WriteString("like_count=")
 	builder.WriteString(fmt.Sprintf("%v", b.LikeCount))

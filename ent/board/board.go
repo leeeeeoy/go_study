@@ -21,6 +21,8 @@ const (
 	FieldText = "text"
 	// FieldUserID holds the string denoting the user_id field in the database.
 	FieldUserID = "user_id"
+	// FieldTopicID holds the string denoting the topic_id field in the database.
+	FieldTopicID = "topic_id"
 	// FieldLikeCount holds the string denoting the like_count field in the database.
 	FieldLikeCount = "like_count"
 	// FieldCommentCount holds the string denoting the comment_count field in the database.
@@ -43,6 +45,8 @@ const (
 	FieldUpdatedAt = "updated_at"
 	// EdgeUser holds the string denoting the user edge name in mutations.
 	EdgeUser = "user"
+	// EdgeTopic holds the string denoting the topic edge name in mutations.
+	EdgeTopic = "topic"
 	// EdgeComments holds the string denoting the comments edge name in mutations.
 	EdgeComments = "comments"
 	// EdgeBookMarks holds the string denoting the book_marks edge name in mutations.
@@ -62,6 +66,13 @@ const (
 	UserInverseTable = "users"
 	// UserColumn is the table column denoting the user relation/edge.
 	UserColumn = "user_id"
+	// TopicTable is the table that holds the topic relation/edge.
+	TopicTable = "boards"
+	// TopicInverseTable is the table name for the Topic entity.
+	// It exists in this package in order to avoid circular dependency with the "topic" package.
+	TopicInverseTable = "topics"
+	// TopicColumn is the table column denoting the topic relation/edge.
+	TopicColumn = "topic_id"
 	// CommentsTable is the table that holds the comments relation/edge.
 	CommentsTable = "comments"
 	// CommentsInverseTable is the table name for the Comment entity.
@@ -105,6 +116,7 @@ var Columns = []string{
 	FieldTitle,
 	FieldText,
 	FieldUserID,
+	FieldTopicID,
 	FieldLikeCount,
 	FieldCommentCount,
 	FieldViewCount,
@@ -192,6 +204,11 @@ func ByUserID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldUserID, opts...).ToFunc()
 }
 
+// ByTopicID orders the results by the topic_id field.
+func ByTopicID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldTopicID, opts...).ToFunc()
+}
+
 // ByLikeCount orders the results by the like_count field.
 func ByLikeCount(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldLikeCount, opts...).ToFunc()
@@ -246,6 +263,13 @@ func ByUpdatedAt(opts ...sql.OrderTermOption) OrderOption {
 func ByUserField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
 		sqlgraph.OrderByNeighborTerms(s, newUserStep(), sql.OrderByField(field, opts...))
+	}
+}
+
+// ByTopicField orders the results by topic field.
+func ByTopicField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newTopicStep(), sql.OrderByField(field, opts...))
 	}
 }
 
@@ -323,6 +347,13 @@ func newUserStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(UserInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.M2O, true, UserTable, UserColumn),
+	)
+}
+func newTopicStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(TopicInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, true, TopicTable, TopicColumn),
 	)
 }
 func newCommentsStep() *sqlgraph.Step {

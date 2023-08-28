@@ -18,6 +18,7 @@ import (
 	"github.com/leeeeeoy/go_study/ent/bookmark"
 	"github.com/leeeeeoy/go_study/ent/comment"
 	"github.com/leeeeeoy/go_study/ent/predicate"
+	"github.com/leeeeeoy/go_study/ent/topic"
 	"github.com/leeeeeoy/go_study/ent/user"
 )
 
@@ -63,6 +64,26 @@ func (bu *BoardUpdate) SetNillableUserID(i *int) *BoardUpdate {
 // ClearUserID clears the value of the "user_id" field.
 func (bu *BoardUpdate) ClearUserID() *BoardUpdate {
 	bu.mutation.ClearUserID()
+	return bu
+}
+
+// SetTopicID sets the "topic_id" field.
+func (bu *BoardUpdate) SetTopicID(i int) *BoardUpdate {
+	bu.mutation.SetTopicID(i)
+	return bu
+}
+
+// SetNillableTopicID sets the "topic_id" field if the given value is not nil.
+func (bu *BoardUpdate) SetNillableTopicID(i *int) *BoardUpdate {
+	if i != nil {
+		bu.SetTopicID(*i)
+	}
+	return bu
+}
+
+// ClearTopicID clears the value of the "topic_id" field.
+func (bu *BoardUpdate) ClearTopicID() *BoardUpdate {
+	bu.mutation.ClearTopicID()
 	return bu
 }
 
@@ -189,6 +210,11 @@ func (bu *BoardUpdate) SetUser(u *User) *BoardUpdate {
 	return bu.SetUserID(u.ID)
 }
 
+// SetTopic sets the "topic" edge to the Topic entity.
+func (bu *BoardUpdate) SetTopic(t *Topic) *BoardUpdate {
+	return bu.SetTopicID(t.ID)
+}
+
 // AddCommentIDs adds the "comments" edge to the Comment entity by IDs.
 func (bu *BoardUpdate) AddCommentIDs(ids ...int) *BoardUpdate {
 	bu.mutation.AddCommentIDs(ids...)
@@ -272,6 +298,12 @@ func (bu *BoardUpdate) Mutation() *BoardMutation {
 // ClearUser clears the "user" edge to the User entity.
 func (bu *BoardUpdate) ClearUser() *BoardUpdate {
 	bu.mutation.ClearUser()
+	return bu
+}
+
+// ClearTopic clears the "topic" edge to the Topic entity.
+func (bu *BoardUpdate) ClearTopic() *BoardUpdate {
+	bu.mutation.ClearTopic()
 	return bu
 }
 
@@ -531,6 +563,35 @@ func (bu *BoardUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if bu.mutation.TopicCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   board.TopicTable,
+			Columns: []string{board.TopicColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(topic.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := bu.mutation.TopicIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   board.TopicTable,
+			Columns: []string{board.TopicColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(topic.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {
@@ -815,6 +876,26 @@ func (buo *BoardUpdateOne) ClearUserID() *BoardUpdateOne {
 	return buo
 }
 
+// SetTopicID sets the "topic_id" field.
+func (buo *BoardUpdateOne) SetTopicID(i int) *BoardUpdateOne {
+	buo.mutation.SetTopicID(i)
+	return buo
+}
+
+// SetNillableTopicID sets the "topic_id" field if the given value is not nil.
+func (buo *BoardUpdateOne) SetNillableTopicID(i *int) *BoardUpdateOne {
+	if i != nil {
+		buo.SetTopicID(*i)
+	}
+	return buo
+}
+
+// ClearTopicID clears the value of the "topic_id" field.
+func (buo *BoardUpdateOne) ClearTopicID() *BoardUpdateOne {
+	buo.mutation.ClearTopicID()
+	return buo
+}
+
 // SetLikeCount sets the "like_count" field.
 func (buo *BoardUpdateOne) SetLikeCount(i int) *BoardUpdateOne {
 	buo.mutation.ResetLikeCount()
@@ -938,6 +1019,11 @@ func (buo *BoardUpdateOne) SetUser(u *User) *BoardUpdateOne {
 	return buo.SetUserID(u.ID)
 }
 
+// SetTopic sets the "topic" edge to the Topic entity.
+func (buo *BoardUpdateOne) SetTopic(t *Topic) *BoardUpdateOne {
+	return buo.SetTopicID(t.ID)
+}
+
 // AddCommentIDs adds the "comments" edge to the Comment entity by IDs.
 func (buo *BoardUpdateOne) AddCommentIDs(ids ...int) *BoardUpdateOne {
 	buo.mutation.AddCommentIDs(ids...)
@@ -1021,6 +1107,12 @@ func (buo *BoardUpdateOne) Mutation() *BoardMutation {
 // ClearUser clears the "user" edge to the User entity.
 func (buo *BoardUpdateOne) ClearUser() *BoardUpdateOne {
 	buo.mutation.ClearUser()
+	return buo
+}
+
+// ClearTopic clears the "topic" edge to the Topic entity.
+func (buo *BoardUpdateOne) ClearTopic() *BoardUpdateOne {
+	buo.mutation.ClearTopic()
 	return buo
 }
 
@@ -1310,6 +1402,35 @@ func (buo *BoardUpdateOne) sqlSave(ctx context.Context) (_node *Board, err error
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if buo.mutation.TopicCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   board.TopicTable,
+			Columns: []string{board.TopicColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(topic.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := buo.mutation.TopicIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   board.TopicTable,
+			Columns: []string{board.TopicColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(topic.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

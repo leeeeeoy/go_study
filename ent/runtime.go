@@ -9,12 +9,14 @@ import (
 	"github.com/leeeeeoy/go_study/ent/boardlike"
 	"github.com/leeeeeoy/go_study/ent/boardreport"
 	"github.com/leeeeeoy/go_study/ent/bookmark"
+	"github.com/leeeeeoy/go_study/ent/category"
 	"github.com/leeeeeoy/go_study/ent/comment"
 	"github.com/leeeeeoy/go_study/ent/commentlike"
 	"github.com/leeeeeoy/go_study/ent/commentreport"
 	"github.com/leeeeeoy/go_study/ent/hashtag"
 	"github.com/leeeeeoy/go_study/ent/reporttype"
 	"github.com/leeeeeoy/go_study/ent/schema"
+	"github.com/leeeeeoy/go_study/ent/topic"
 	"github.com/leeeeeoy/go_study/ent/user"
 )
 
@@ -25,31 +27,31 @@ func init() {
 	boardFields := schema.Board{}.Fields()
 	_ = boardFields
 	// boardDescLikeCount is the schema descriptor for like_count field.
-	boardDescLikeCount := boardFields[3].Descriptor()
+	boardDescLikeCount := boardFields[4].Descriptor()
 	// board.LikeCountValidator is a validator for the "like_count" field. It is called by the builders before save.
 	board.LikeCountValidator = boardDescLikeCount.Validators[0].(func(int) error)
 	// boardDescCommentCount is the schema descriptor for comment_count field.
-	boardDescCommentCount := boardFields[4].Descriptor()
+	boardDescCommentCount := boardFields[5].Descriptor()
 	// board.CommentCountValidator is a validator for the "comment_count" field. It is called by the builders before save.
 	board.CommentCountValidator = boardDescCommentCount.Validators[0].(func(int) error)
 	// boardDescViewCount is the schema descriptor for view_count field.
-	boardDescViewCount := boardFields[5].Descriptor()
+	boardDescViewCount := boardFields[6].Descriptor()
 	// board.ViewCountValidator is a validator for the "view_count" field. It is called by the builders before save.
 	board.ViewCountValidator = boardDescViewCount.Validators[0].(func(int) error)
 	// boardDescReportCount is the schema descriptor for report_count field.
-	boardDescReportCount := boardFields[6].Descriptor()
+	boardDescReportCount := boardFields[7].Descriptor()
 	// board.ReportCountValidator is a validator for the "report_count" field. It is called by the builders before save.
 	board.ReportCountValidator = boardDescReportCount.Validators[0].(func(int) error)
 	// boardDescPrivate is the schema descriptor for private field.
-	boardDescPrivate := boardFields[8].Descriptor()
+	boardDescPrivate := boardFields[9].Descriptor()
 	// board.DefaultPrivate holds the default value on creation for the private field.
 	board.DefaultPrivate = boardDescPrivate.Default.(bool)
 	// boardDescCreatedAt is the schema descriptor for created_at field.
-	boardDescCreatedAt := boardFields[11].Descriptor()
+	boardDescCreatedAt := boardFields[12].Descriptor()
 	// board.DefaultCreatedAt holds the default value on creation for the created_at field.
 	board.DefaultCreatedAt = boardDescCreatedAt.Default.(func() time.Time)
 	// boardDescUpdatedAt is the schema descriptor for updated_at field.
-	boardDescUpdatedAt := boardFields[12].Descriptor()
+	boardDescUpdatedAt := boardFields[13].Descriptor()
 	// board.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	board.DefaultUpdatedAt = boardDescUpdatedAt.Default.(func() time.Time)
 	// board.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
@@ -78,6 +80,12 @@ func init() {
 	bookmarkDescCreatedAt := bookmarkFields[2].Descriptor()
 	// bookmark.DefaultCreatedAt holds the default value on creation for the created_at field.
 	bookmark.DefaultCreatedAt = bookmarkDescCreatedAt.Default.(func() time.Time)
+	categoryFields := schema.Category{}.Fields()
+	_ = categoryFields
+	// categoryDescCreatedAt is the schema descriptor for created_at field.
+	categoryDescCreatedAt := categoryFields[1].Descriptor()
+	// category.DefaultCreatedAt holds the default value on creation for the created_at field.
+	category.DefaultCreatedAt = categoryDescCreatedAt.Default.(func() time.Time)
 	commentFields := schema.Comment{}.Fields()
 	_ = commentFields
 	// commentDescReportCount is the schema descriptor for report_count field.
@@ -128,6 +136,12 @@ func init() {
 	reporttypeDescInActive := reporttypeFields[1].Descriptor()
 	// reporttype.DefaultInActive holds the default value on creation for the in_active field.
 	reporttype.DefaultInActive = reporttypeDescInActive.Default.(bool)
+	topicFields := schema.Topic{}.Fields()
+	_ = topicFields
+	// topicDescCreatedAt is the schema descriptor for created_at field.
+	topicDescCreatedAt := topicFields[2].Descriptor()
+	// topic.DefaultCreatedAt holds the default value on creation for the created_at field.
+	topic.DefaultCreatedAt = topicDescCreatedAt.Default.(func() time.Time)
 	userFields := schema.User{}.Fields()
 	_ = userFields
 	// userDescCreatedAt is the schema descriptor for created_at field.

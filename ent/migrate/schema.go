@@ -23,6 +23,7 @@ var (
 		{Name: "attachments", Type: field.TypeString, Nullable: true},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "topic_id", Type: field.TypeInt, Nullable: true},
 		{Name: "user_id", Type: field.TypeInt, Nullable: true},
 	}
 	// BoardsTable holds the schema information for the "boards" table.
@@ -32,8 +33,14 @@ var (
 		PrimaryKey: []*schema.Column{BoardsColumns[0]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
-				Symbol:     "boards_users_boards",
+				Symbol:     "boards_topics_boards",
 				Columns:    []*schema.Column{BoardsColumns[13]},
+				RefColumns: []*schema.Column{TopicsColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "boards_users_boards",
+				Columns:    []*schema.Column{BoardsColumns[14]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -155,6 +162,18 @@ var (
 				OnDelete:   schema.SetNull,
 			},
 		},
+	}
+	// CategoriesColumns holds the columns for the "categories" table.
+	CategoriesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "name", Type: field.TypeString},
+		{Name: "created_at", Type: field.TypeTime},
+	}
+	// CategoriesTable holds the schema information for the "categories" table.
+	CategoriesTable = &schema.Table{
+		Name:       "categories",
+		Columns:    CategoriesColumns,
+		PrimaryKey: []*schema.Column{CategoriesColumns[0]},
 	}
 	// CommentsColumns holds the columns for the "comments" table.
 	CommentsColumns = []*schema.Column{
@@ -305,6 +324,27 @@ var (
 		Columns:    ReportTypesColumns,
 		PrimaryKey: []*schema.Column{ReportTypesColumns[0]},
 	}
+	// TopicsColumns holds the columns for the "topics" table.
+	TopicsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "name", Type: field.TypeString},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "category_id", Type: field.TypeInt, Nullable: true},
+	}
+	// TopicsTable holds the schema information for the "topics" table.
+	TopicsTable = &schema.Table{
+		Name:       "topics",
+		Columns:    TopicsColumns,
+		PrimaryKey: []*schema.Column{TopicsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "topics_categories_topics",
+				Columns:    []*schema.Column{TopicsColumns[3]},
+				RefColumns: []*schema.Column{CategoriesColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
+	}
 	// UsersColumns holds the columns for the "users" table.
 	UsersColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
@@ -326,18 +366,21 @@ var (
 		BoardLikesTable,
 		BoardReportsTable,
 		BookMarksTable,
+		CategoriesTable,
 		CommentsTable,
 		CommentLikesTable,
 		CommentMentionsTable,
 		CommentReportsTable,
 		HashtagsTable,
 		ReportTypesTable,
+		TopicsTable,
 		UsersTable,
 	}
 )
 
 func init() {
-	BoardsTable.ForeignKeys[0].RefTable = UsersTable
+	BoardsTable.ForeignKeys[0].RefTable = TopicsTable
+	BoardsTable.ForeignKeys[1].RefTable = UsersTable
 	BoardHashtagsTable.ForeignKeys[0].RefTable = BoardsTable
 	BoardHashtagsTable.ForeignKeys[1].RefTable = HashtagsTable
 	BoardLikesTable.ForeignKeys[0].RefTable = BoardsTable
@@ -356,4 +399,5 @@ func init() {
 	CommentReportsTable.ForeignKeys[0].RefTable = CommentsTable
 	CommentReportsTable.ForeignKeys[1].RefTable = ReportTypesTable
 	CommentReportsTable.ForeignKeys[2].RefTable = UsersTable
+	TopicsTable.ForeignKeys[0].RefTable = CategoriesTable
 }

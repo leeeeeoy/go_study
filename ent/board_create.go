@@ -16,6 +16,7 @@ import (
 	"github.com/leeeeeoy/go_study/ent/boardreport"
 	"github.com/leeeeeoy/go_study/ent/bookmark"
 	"github.com/leeeeeoy/go_study/ent/comment"
+	"github.com/leeeeeoy/go_study/ent/topic"
 	"github.com/leeeeeoy/go_study/ent/user"
 )
 
@@ -48,6 +49,20 @@ func (bc *BoardCreate) SetUserID(i int) *BoardCreate {
 func (bc *BoardCreate) SetNillableUserID(i *int) *BoardCreate {
 	if i != nil {
 		bc.SetUserID(*i)
+	}
+	return bc
+}
+
+// SetTopicID sets the "topic_id" field.
+func (bc *BoardCreate) SetTopicID(i int) *BoardCreate {
+	bc.mutation.SetTopicID(i)
+	return bc
+}
+
+// SetNillableTopicID sets the "topic_id" field if the given value is not nil.
+func (bc *BoardCreate) SetNillableTopicID(i *int) *BoardCreate {
+	if i != nil {
+		bc.SetTopicID(*i)
 	}
 	return bc
 }
@@ -147,6 +162,11 @@ func (bc *BoardCreate) SetNillableUpdatedAt(t *time.Time) *BoardCreate {
 // SetUser sets the "user" edge to the User entity.
 func (bc *BoardCreate) SetUser(u *User) *BoardCreate {
 	return bc.SetUserID(u.ID)
+}
+
+// SetTopic sets the "topic" edge to the Topic entity.
+func (bc *BoardCreate) SetTopic(t *Topic) *BoardCreate {
+	return bc.SetTopicID(t.ID)
 }
 
 // AddCommentIDs adds the "comments" edge to the Comment entity by IDs.
@@ -422,6 +442,23 @@ func (bc *BoardCreate) createSpec() (*Board, *sqlgraph.CreateSpec) {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.UserID = nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := bc.mutation.TopicIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   board.TopicTable,
+			Columns: []string{board.TopicColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(topic.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.TopicID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := bc.mutation.CommentsIDs(); len(nodes) > 0 {

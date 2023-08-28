@@ -70,6 +70,11 @@ func UserID(v int) predicate.Board {
 	return predicate.Board(sql.FieldEQ(FieldUserID, v))
 }
 
+// TopicID applies equality check predicate on the "topic_id" field. It's identical to TopicIDEQ.
+func TopicID(v int) predicate.Board {
+	return predicate.Board(sql.FieldEQ(FieldTopicID, v))
+}
+
 // LikeCount applies equality check predicate on the "like_count" field. It's identical to LikeCountEQ.
 func LikeCount(v int) predicate.Board {
 	return predicate.Board(sql.FieldEQ(FieldLikeCount, v))
@@ -273,6 +278,36 @@ func UserIDIsNil() predicate.Board {
 // UserIDNotNil applies the NotNil predicate on the "user_id" field.
 func UserIDNotNil() predicate.Board {
 	return predicate.Board(sql.FieldNotNull(FieldUserID))
+}
+
+// TopicIDEQ applies the EQ predicate on the "topic_id" field.
+func TopicIDEQ(v int) predicate.Board {
+	return predicate.Board(sql.FieldEQ(FieldTopicID, v))
+}
+
+// TopicIDNEQ applies the NEQ predicate on the "topic_id" field.
+func TopicIDNEQ(v int) predicate.Board {
+	return predicate.Board(sql.FieldNEQ(FieldTopicID, v))
+}
+
+// TopicIDIn applies the In predicate on the "topic_id" field.
+func TopicIDIn(vs ...int) predicate.Board {
+	return predicate.Board(sql.FieldIn(FieldTopicID, vs...))
+}
+
+// TopicIDNotIn applies the NotIn predicate on the "topic_id" field.
+func TopicIDNotIn(vs ...int) predicate.Board {
+	return predicate.Board(sql.FieldNotIn(FieldTopicID, vs...))
+}
+
+// TopicIDIsNil applies the IsNil predicate on the "topic_id" field.
+func TopicIDIsNil() predicate.Board {
+	return predicate.Board(sql.FieldIsNull(FieldTopicID))
+}
+
+// TopicIDNotNil applies the NotNil predicate on the "topic_id" field.
+func TopicIDNotNil() predicate.Board {
+	return predicate.Board(sql.FieldNotNull(FieldTopicID))
 }
 
 // LikeCountEQ applies the EQ predicate on the "like_count" field.
@@ -700,6 +735,29 @@ func HasUser() predicate.Board {
 func HasUserWith(preds ...predicate.User) predicate.Board {
 	return predicate.Board(func(s *sql.Selector) {
 		step := newUserStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasTopic applies the HasEdge predicate on the "topic" edge.
+func HasTopic() predicate.Board {
+	return predicate.Board(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, TopicTable, TopicColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasTopicWith applies the HasEdge predicate on the "topic" edge with a given conditions (other predicates).
+func HasTopicWith(preds ...predicate.Topic) predicate.Board {
+	return predicate.Board(func(s *sql.Selector) {
+		step := newTopicStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

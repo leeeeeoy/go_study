@@ -18,6 +18,7 @@ import (
 	"github.com/leeeeeoy/go_study/ent/bookmark"
 	"github.com/leeeeeoy/go_study/ent/comment"
 	"github.com/leeeeeoy/go_study/ent/predicate"
+	"github.com/leeeeeoy/go_study/ent/topic"
 	"github.com/leeeeeoy/go_study/ent/user"
 )
 
@@ -29,6 +30,7 @@ type BoardQuery struct {
 	inters           []Interceptor
 	predicates       []predicate.Board
 	withUser         *UserQuery
+	withTopic        *TopicQuery
 	withComments     *CommentQuery
 	withBookMarks    *BookMarkQuery
 	withBoardLike    *BoardLikeQuery
@@ -85,6 +87,28 @@ func (bq *BoardQuery) QueryUser() *UserQuery {
 			sqlgraph.From(board.Table, board.FieldID, selector),
 			sqlgraph.To(user.Table, user.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, board.UserTable, board.UserColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(bq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryTopic chains the current query on the "topic" edge.
+func (bq *BoardQuery) QueryTopic() *TopicQuery {
+	query := (&TopicClient{config: bq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := bq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := bq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(board.Table, board.FieldID, selector),
+			sqlgraph.To(topic.Table, topic.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, board.TopicTable, board.TopicColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(bq.driver.Dialect(), step)
 		return fromU, nil
@@ -395,6 +419,7 @@ func (bq *BoardQuery) Clone() *BoardQuery {
 		inters:           append([]Interceptor{}, bq.inters...),
 		predicates:       append([]predicate.Board{}, bq.predicates...),
 		withUser:         bq.withUser.Clone(),
+		withTopic:        bq.withTopic.Clone(),
 		withComments:     bq.withComments.Clone(),
 		withBookMarks:    bq.withBookMarks.Clone(),
 		withBoardLike:    bq.withBoardLike.Clone(),
@@ -414,6 +439,17 @@ func (bq *BoardQuery) WithUser(opts ...func(*UserQuery)) *BoardQuery {
 		opt(query)
 	}
 	bq.withUser = query
+	return bq
+}
+
+// WithTopic tells the query-builder to eager-load the nodes that are connected to
+// the "topic" edge. The optional arguments are used to configure the query builder of the edge.
+func (bq *BoardQuery) WithTopic(opts ...func(*TopicQuery)) *BoardQuery {
+	query := (&TopicClient{config: bq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	bq.withTopic = query
 	return bq
 }
 
@@ -550,8 +586,9 @@ func (bq *BoardQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Board,
 	var (
 		nodes       = []*Board{}
 		_spec       = bq.querySpec()
-		loadedTypes = [6]bool{
+		loadedTypes = [7]bool{
 			bq.withUser != nil,
+			bq.withTopic != nil,
 			bq.withComments != nil,
 			bq.withBookMarks != nil,
 			bq.withBoardLike != nil,
@@ -580,6 +617,12 @@ func (bq *BoardQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Board,
 	if query := bq.withUser; query != nil {
 		if err := bq.loadUser(ctx, query, nodes, nil,
 			func(n *Board, e *User) { n.Edges.User = e }); err != nil {
+			return nil, err
+		}
+	}
+	if query := bq.withTopic; query != nil {
+		if err := bq.loadTopic(ctx, query, nodes, nil,
+			func(n *Board, e *Topic) { n.Edges.Topic = e }); err != nil {
 			return nil, err
 		}
 	}
@@ -643,6 +686,35 @@ func (bq *BoardQuery) loadUser(ctx context.Context, query *UserQuery, nodes []*B
 		nodes, ok := nodeids[n.ID]
 		if !ok {
 			return fmt.Errorf(`unexpected foreign-key "user_id" returned %v`, n.ID)
+		}
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
+	}
+	return nil
+}
+func (bq *BoardQuery) loadTopic(ctx context.Context, query *TopicQuery, nodes []*Board, init func(*Board), assign func(*Board, *Topic)) error {
+	ids := make([]int, 0, len(nodes))
+	nodeids := make(map[int][]*Board)
+	for i := range nodes {
+		fk := nodes[i].TopicID
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	query.Where(topic.IDIn(ids...))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nodeids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "topic_id" returned %v`, n.ID)
 		}
 		for i := range nodes {
 			assign(nodes[i], n)
@@ -828,6 +900,9 @@ func (bq *BoardQuery) querySpec() *sqlgraph.QuerySpec {
 		}
 		if bq.withUser != nil {
 			_spec.Node.AddColumnOnce(board.FieldUserID)
+		}
+		if bq.withTopic != nil {
+			_spec.Node.AddColumnOnce(board.FieldTopicID)
 		}
 	}
 	if ps := bq.predicates; len(ps) > 0 {

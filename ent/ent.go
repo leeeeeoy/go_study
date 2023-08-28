@@ -17,12 +17,14 @@ import (
 	"github.com/leeeeeoy/go_study/ent/boardlike"
 	"github.com/leeeeeoy/go_study/ent/boardreport"
 	"github.com/leeeeeoy/go_study/ent/bookmark"
+	"github.com/leeeeeoy/go_study/ent/category"
 	"github.com/leeeeeoy/go_study/ent/comment"
 	"github.com/leeeeeoy/go_study/ent/commentlike"
 	"github.com/leeeeeoy/go_study/ent/commentmention"
 	"github.com/leeeeeoy/go_study/ent/commentreport"
 	"github.com/leeeeeoy/go_study/ent/hashtag"
 	"github.com/leeeeeoy/go_study/ent/reporttype"
+	"github.com/leeeeeoy/go_study/ent/topic"
 	"github.com/leeeeeoy/go_study/ent/user"
 )
 
@@ -89,12 +91,14 @@ func checkColumn(table, column string) error {
 			boardlike.Table:      boardlike.ValidColumn,
 			boardreport.Table:    boardreport.ValidColumn,
 			bookmark.Table:       bookmark.ValidColumn,
+			category.Table:       category.ValidColumn,
 			comment.Table:        comment.ValidColumn,
 			commentlike.Table:    commentlike.ValidColumn,
 			commentmention.Table: commentmention.ValidColumn,
 			commentreport.Table:  commentreport.ValidColumn,
 			hashtag.Table:        hashtag.ValidColumn,
 			reporttype.Table:     reporttype.ValidColumn,
+			topic.Table:          topic.ValidColumn,
 			user.Table:           user.ValidColumn,
 		})
 	})
