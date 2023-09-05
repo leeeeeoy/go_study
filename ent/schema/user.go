@@ -16,9 +16,9 @@ type User struct {
 // Fields of the User.
 func (User) Fields() []ent.Field {
 	return []ent.Field{
-		field.String("email"),
-		field.String("password").Sensitive(),
-		field.String("name"),
+		field.String("email").MaxLen(20),
+		field.String("password").Sensitive().MinLen(8),
+		field.String("name").MaxLen(10),
 		field.Time("created_at").Default(time.Now),
 	}
 }
