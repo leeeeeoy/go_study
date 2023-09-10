@@ -11,6 +11,7 @@ import (
 type UserRepository interface {
 	CreateUser(userRequest *dto.UserRequest) (*dto.UserResponse, error)
 	GetUserByEmail(email string) (*dto.UserResponse, error)
+	SignIn(email, password string) (string, error)
 }
 
 type userRepositoryImpl struct {
@@ -25,10 +26,11 @@ func NewUserRepository(client *ent.Client) *userRepositoryImpl {
 
 func (userRepository *userRepositoryImpl) CreateUser(userRequest *dto.UserRequest) (*dto.UserResponse, error) {
 
-	// 트랜잭션, 생성 수정 삭제 할 때는 트랜잭션 하는게 좋아요 + Row level Lock
-	tx, _ := userRepository.db.Tx(context.TODO())
-	tx.Commit()
-	tx.Rollback()
+	tx, err := userRepository.db.Tx(context.Background())
+
+	if err != nil {
+		return nil, err
+	}
 
 	res, err := userRepository.db.User.Create().
 		SetEmail(userRequest.Email).
@@ -37,6 +39,7 @@ func (userRepository *userRepositoryImpl) CreateUser(userRequest *dto.UserReques
 		Save(context.Background())
 
 	if err != nil {
+		tx.Rollback()
 		return nil, err
 	}
 
@@ -45,6 +48,11 @@ func (userRepository *userRepositoryImpl) CreateUser(userRequest *dto.UserReques
 		Email:     res.Email,
 		Name:      res.Name,
 		CreatedAt: res.CreatedAt,
+	}
+
+	if err := tx.Commit(); err != nil {
+		tx.Rollback()
+		return nil, err
 	}
 
 	return result, nil
@@ -66,4 +74,18 @@ func (userRepository *userRepositoryImpl) GetUserByEmail(email string) (*dto.Use
 	}
 
 	return result, nil
+}
+
+func (userRepository *userRepositoryImpl) SignIn(email, password string) (string, error) {
+	res, err := userRepository.db.User.Query().Where(user.Email(email), user.Password(password)).Only(context.Background())
+
+	if err != nil {
+		return "", err
+	}
+
+	if res.Password != password {
+		return "", err
+	}
+
+	return res.Name, nil
 }
