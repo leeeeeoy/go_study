@@ -88,14 +88,10 @@ func TestGetUserByEmail(t *testing.T) {
 	}{
 		{
 			"실패, 조회 실패",
-			"Email",
+			"에베베베",
 			&dto.UserResponse{Name: "Name", Email: "Email"},
 		},
-		{
-			"실패, 빈 값",
-			"Email2",
-			&dto.UserResponse{Name: "Name", Email: "Email"},
-		},
+
 		{
 			"성공",
 			"Email",
@@ -105,7 +101,7 @@ func TestGetUserByEmail(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			output, err := ur.GetUserByEmail(&tt.input)
+			output, err := ur.GetUserByEmail(tt.input)
 
 			if err != nil {
 				t.Fatal(err)

@@ -55,7 +55,7 @@ func (uh *UserHandler) getUserByEmail(c echo.Context) error {
 		})
 	}
 
-	res, err := uh.userRepository.GetUserByEmail(&param)
+	res, err := uh.userRepository.GetUserByEmail(param)
 
 	if err != nil {
 		return c.JSON(http.StatusOK, map[string]string{
