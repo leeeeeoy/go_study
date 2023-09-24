@@ -1,17 +1,16 @@
 package db
 
 import (
-	"context"
+	"database/sql"
 	"fmt"
 	"log"
 	"os"
 
 	"github.com/joho/godotenv"
-	"github.com/leeeeeoy/go_study/ent"
 	_ "github.com/lib/pq"
 )
 
-func InitDB() *ent.Client {
+func InitDB() *sql.DB {
 	err := godotenv.Load()
 
 	if err != nil {
@@ -26,15 +25,10 @@ func InitDB() *ent.Client {
 
 	dbConfig := fmt.Sprintf("host=%s port=%s user=%s dbname=%s sslmode=disable password=%s", dbHost, dbPort, dbUser, dbName, dbPassword)
 
-	client, err := ent.Open("postgres", dbConfig)
-
+	db, err := sql.Open("postgres", dbConfig)
 	if err != nil {
-		log.Fatalf("failed opening connection to postgres: %v", err)
+		log.Fatal(err)
 	}
 
-	if err := client.Schema.Create(context.Background()); err != nil {
-		log.Fatalf("failed creating schema resources: %v", err)
-	}
-
-	return client.Debug()
+	return db
 }

@@ -21,7 +21,6 @@ func NewUserHandler(userRepository repository.UserRepository) *UserHandler {
 }
 
 func (uh *UserHandler) InitUserHandler(e *echo.Echo) {
-	e.GET("/user/:email", uh.getUserByEmail)
 	e.POST("/user", uh.createUser)
 	e.POST("/user/sign-in", uh.signIn)
 }
@@ -42,28 +41,6 @@ func (uh *UserHandler) createUser(c echo.Context) error {
 		return c.JSON(http.StatusOK, map[string]string{
 			"code":    "-1",
 			"message": "중복된 이메일입니다.",
-		})
-	}
-
-	return c.JSON(http.StatusOK, res)
-}
-
-func (uh *UserHandler) getUserByEmail(c echo.Context) error {
-	param := c.Param("email")
-
-	if param == "" {
-		return c.JSON(http.StatusOK, map[string]string{
-			"code":    "-1",
-			"message": "잘못된 파라미터 요청입니다.",
-		})
-	}
-
-	res, err := uh.userRepository.GetUserByEmail(param)
-
-	if err != nil {
-		return c.JSON(http.StatusOK, map[string]string{
-			"code":    "-1",
-			"message": "해당 유저가 존재하지 않습니다.",
 		})
 	}
 
@@ -92,7 +69,7 @@ func (uh *UserHandler) signIn(c echo.Context) error {
 
 	claims := &dto.JwtCustomClaims{
 		Name:  user,
-		Admin: true,
+		Admin: param.Email == "leeeeeoy@dozn.co.kr",
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 3)),
 		},

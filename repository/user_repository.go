@@ -2,82 +2,71 @@ package repository
 
 import (
 	"context"
+	"database/sql"
 
 	"github.com/leeeeeoy/go_study/dto"
-	"github.com/leeeeeoy/go_study/ent"
-	"github.com/leeeeeoy/go_study/ent/user"
+	"github.com/leeeeeoy/go_study/tutorial"
 )
 
 type UserRepository interface {
 	CreateUser(userRequest *dto.UserRequest) (*dto.UserResponse, error)
-	GetUserByEmail(email string) (*dto.UserResponse, error)
 	SignIn(email, password string) (string, error)
 }
 
 type userRepositoryImpl struct {
-	db *ent.Client
+	db *sql.DB
 }
 
-func NewUserRepository(client *ent.Client) *userRepositoryImpl {
+func NewUserRepository(client *sql.DB) *userRepositoryImpl {
 	return &userRepositoryImpl{
 		db: client,
 	}
 }
 
 func (userRepository *userRepositoryImpl) CreateUser(userRequest *dto.UserRequest) (*dto.UserResponse, error) {
+	return nil, nil
+	// tx, err := userRepository.db.Tx(context.Background())
 
-	tx, err := userRepository.db.Tx(context.Background())
+	// if err != nil {
+	// return nil, err
+	// }
 
-	if err != nil {
-		return nil, err
-	}
+	// res, err := tx.User.Create().
+	// 	SetEmail(userRequest.Email).
+	// 	SetName(userRequest.Name).
+	// 	SetPassword(userRequest.Password).
+	// 	Save(context.Background())
 
-	res, err := userRepository.db.User.Create().
-		SetEmail(userRequest.Email).
-		SetName(userRequest.Name).
-		SetPassword(userRequest.Password).
-		Save(context.Background())
+	// if err != nil {
+	// 	tx.Rollback()
+	// 	return nil, err
+	// }
 
-	if err != nil {
-		tx.Rollback()
-		return nil, err
-	}
+	// result := &dto.UserResponse{
+	// 	ID:        res.ID,
+	// 	Email:     res.Email,
+	// 	Name:      res.Name,
+	// 	CreatedAt: res.CreatedAt,
+	// }
 
-	result := &dto.UserResponse{
-		ID:        res.ID,
-		Email:     res.Email,
-		Name:      res.Name,
-		CreatedAt: res.CreatedAt,
-	}
+	// if err := tx.Commit(); err != nil {
+	// 	tx.Rollback()
+	// 	return nil, err
+	// }
 
-	if err := tx.Commit(); err != nil {
-		tx.Rollback()
-		return nil, err
-	}
+	// return result, nil
 
-	return result, nil
-
-}
-
-func (userRepository *userRepositoryImpl) GetUserByEmail(email string) (*dto.UserResponse, error) {
-	res, err := userRepository.db.User.Query().Where(user.Email(email)).Only(context.Background())
-
-	if err != nil {
-		return nil, err
-	}
-
-	result := &dto.UserResponse{
-		ID:        res.ID,
-		Email:     res.Email,
-		Name:      res.Name,
-		CreatedAt: res.CreatedAt,
-	}
-
-	return result, nil
 }
 
 func (userRepository *userRepositoryImpl) SignIn(email, password string) (string, error) {
-	res, err := userRepository.db.User.Query().Where(user.Email(email), user.Password(password)).Only(context.Background())
+	queries := tutorial.New(userRepository.db)
+
+	res, err := queries.SignInByEmail(
+		context.TODO(),
+		&tutorial.SignInByEmailParams{
+			Email:    email,
+			Password: password,
+		})
 
 	if err != nil {
 		return "", err
@@ -87,5 +76,5 @@ func (userRepository *userRepositoryImpl) SignIn(email, password string) (string
 		return "", err
 	}
 
-	return res.Name, nil
+	return res.Username, nil
 }
