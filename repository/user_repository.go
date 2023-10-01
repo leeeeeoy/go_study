@@ -11,6 +11,7 @@ import (
 type UserRepository interface {
 	CreateUser(userRequest *dto.UserRequest) (*dto.UserResponse, error)
 	SignIn(email, password string) (string, error)
+	GetUsers() ([]*dto.UserResponse, error)
 }
 
 type userRepositoryImpl struct {
@@ -24,38 +25,64 @@ func NewUserRepository(client *sql.DB) *userRepositoryImpl {
 }
 
 func (userRepository *userRepositoryImpl) CreateUser(userRequest *dto.UserRequest) (*dto.UserResponse, error) {
-	return nil, nil
-	// tx, err := userRepository.db.Tx(context.Background())
+	tx, err := userRepository.db.Begin()
 
-	// if err != nil {
-	// return nil, err
-	// }
+	if err != nil {
+		return nil, err
+	}
 
-	// res, err := tx.User.Create().
-	// 	SetEmail(userRequest.Email).
-	// 	SetName(userRequest.Name).
-	// 	SetPassword(userRequest.Password).
-	// 	Save(context.Background())
+	defer tx.Rollback()
 
-	// if err != nil {
-	// 	tx.Rollback()
-	// 	return nil, err
-	// }
+	queries := tutorial.New(userRepository.db)
+	qtx := queries.WithTx(tx)
 
-	// result := &dto.UserResponse{
-	// 	ID:        res.ID,
-	// 	Email:     res.Email,
-	// 	Name:      res.Name,
-	// 	CreatedAt: res.CreatedAt,
-	// }
+	res, err := qtx.CreateUser(context.TODO(), &tutorial.CreateUserParams{
+		Email:    userRequest.Email,
+		Password: userRequest.Password,
+		Username: userRequest.Name,
+	})
 
-	// if err := tx.Commit(); err != nil {
-	// 	tx.Rollback()
-	// 	return nil, err
-	// }
+	if err != nil {
+		return nil, err
+	}
 
-	// return result, nil
+	result := &dto.UserResponse{
+		ID:        res.ID,
+		Email:     res.Email,
+		Name:      res.Username,
+		CreatedAt: res.CreatedAt,
+	}
 
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+
+	return result, nil
+
+}
+
+func (userRepository *userRepositoryImpl) GetUsers() ([]*dto.UserResponse, error) {
+	queries := tutorial.New(userRepository.db)
+
+	res, err := queries.GetUsers(context.TODO())
+
+	if err != nil {
+		return nil, err
+	}
+
+	var results []*dto.UserResponse
+
+	for _, data := range res {
+		results = append(
+			results, &dto.UserResponse{
+				ID:        data.ID,
+				Email:     data.Email,
+				Name:      data.Username,
+				CreatedAt: data.CreatedAt,
+			})
+	}
+
+	return results, nil
 }
 
 func (userRepository *userRepositoryImpl) SignIn(email, password string) (string, error) {

@@ -11,6 +11,29 @@ import (
 	"github.com/google/uuid"
 )
 
+const createUser = `-- name: CreateUser :one
+INSERT INTO users (email, "password", username ) VALUES ( $1, $2, $3 ) RETURNING id, email, password, username, created_at
+`
+
+type CreateUserParams struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+	Username string `json:"username"`
+}
+
+func (q *Queries) CreateUser(ctx context.Context, arg *CreateUserParams) (*User, error) {
+	row := q.db.QueryRowContext(ctx, createUser, arg.Email, arg.Password, arg.Username)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.Password,
+		&i.Username,
+		&i.CreatedAt,
+	)
+	return &i, err
+}
+
 const getUserById = `-- name: GetUserById :one
 SELECT id, email, password, username, created_at FROM users WHERE id = $1 LIMIT 1
 `
@@ -26,6 +49,39 @@ func (q *Queries) GetUserById(ctx context.Context, id uuid.UUID) (*User, error) 
 		&i.CreatedAt,
 	)
 	return &i, err
+}
+
+const getUsers = `-- name: GetUsers :many
+SELECT id, email, password, username, created_at FROM users order by created_at
+`
+
+func (q *Queries) GetUsers(ctx context.Context) ([]*User, error) {
+	rows, err := q.db.QueryContext(ctx, getUsers)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []*User
+	for rows.Next() {
+		var i User
+		if err := rows.Scan(
+			&i.ID,
+			&i.Email,
+			&i.Password,
+			&i.Username,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const signInByEmail = `-- name: SignInByEmail :one

@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 )
 
 type UserRequest struct {
@@ -13,7 +14,7 @@ type UserRequest struct {
 }
 
 type UserResponse struct {
-	ID        int       `json:"id,omitempty"`
+	ID        uuid.UUID `json:"id,omitempty"`
 	Email     string    `json:"email,omitempty"`
 	Name      string    `json:"name,omitempty"`
 	CreatedAt time.Time `json:"created_at,omitempty"`

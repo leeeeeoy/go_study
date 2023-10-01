@@ -23,6 +23,7 @@ func NewUserHandler(userRepository repository.UserRepository) *UserHandler {
 func (uh *UserHandler) InitUserHandler(e *echo.Echo) {
 	e.POST("/user", uh.createUser)
 	e.POST("/user/sign-in", uh.signIn)
+	e.GET("/users", uh.getUsers)
 }
 
 func (uh *UserHandler) createUser(c echo.Context) error {
@@ -47,6 +48,26 @@ func (uh *UserHandler) createUser(c echo.Context) error {
 	return c.JSON(http.StatusOK, res)
 }
 
+func (uh *UserHandler) getUsers(c echo.Context) error {
+	res, err := uh.userRepository.GetUsers()
+
+	if err != nil {
+		return c.JSON(http.StatusOK, map[string]string{
+			"code":    "-1",
+			"message": "잘못된 요청입니다",
+		})
+	}
+
+	if len(res) == 0 {
+		return c.JSON(http.StatusOK, map[string]string{
+			"code":    "-1",
+			"message": "유저가 존재하지 않습니다",
+		})
+	}
+
+	return c.JSON(http.StatusOK, res)
+}
+
 func (uh *UserHandler) signIn(c echo.Context) error {
 
 	param := new(dto.SignInRequest)
@@ -58,7 +79,7 @@ func (uh *UserHandler) signIn(c echo.Context) error {
 		})
 	}
 
-	user, err := uh.userRepository.SignIn(param.Email, param.Password)
+	username, err := uh.userRepository.SignIn(param.Email, param.Password)
 
 	if err != nil {
 		return c.JSON(http.StatusOK, map[string]string{
@@ -68,7 +89,7 @@ func (uh *UserHandler) signIn(c echo.Context) error {
 	}
 
 	claims := &dto.JwtCustomClaims{
-		Name:  user,
+		Name:  username,
 		Admin: param.Email == "leeeeeoy@dozn.co.kr",
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 3)),
